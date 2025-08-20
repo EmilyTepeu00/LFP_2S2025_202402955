@@ -1,5 +1,6 @@
 const fs = require("fs");
 const readline = require("readline");
+const generadorReportes = require("./reportes");
 
 //CLASE PRINCIPAL
 class CallCenter {
@@ -27,7 +28,7 @@ class CallCenter {
           const campos = this.dividirLineaCSV(linea);
 
           if(campos.length < 5){
-            console.log(`Línea ${i+1} ignorada: formato incorrecto`);
+            console.log(`Linea ${i+1} ignorada: formato incorrecto`);
             continue;
           }
 
@@ -40,12 +41,15 @@ class CallCenter {
 
           //VALIDAR ID
           if (isNaN(idOperador) || isNaN(idCliente)) {
-              console.log(`Línea ${i+1} ignorada: ID no válido`);
+              console.log(`Linea ${i+1} ignorada: ID no valido`);
               continue;
           }
 
           //PARA CONTAR LAS ESTRELLAS
           const calificacion = this.contarEstrellas(estrellasStr);
+
+          //DETERMINAR CLASIFICACION
+          const clasificacion = this.clasificarLlamada(clasificacion);
 
           //GUARDAR OPERADOR
           if(!this.operadores.has(idOperador)){
@@ -69,6 +73,7 @@ class CallCenter {
             idOperador, 
             nombreOperador, 
             calificacion, 
+            clasificacion,
             idCliente, 
             nombreCliente
           });
@@ -78,7 +83,7 @@ class CallCenter {
           registrosCargados++;
 
         } catch (error) {
-          console.log(`Error procesando línea ${i+1}: ${error.message}`);
+          console.log(`Error procesando linea ${i+1}`);
         }
       }
 
@@ -91,6 +96,13 @@ class CallCenter {
       console.error("\nError al leer el archivo");
       return 0;
     }
+  }
+
+  //CLASIFICAR LLAMADA SEGUN LAS ESTRELLAS
+  clasificarLlamada(calificacion){
+    if(calificacion >= 4) return "Buena";
+    if(calificacion >= 2) return "Media";
+    return "Mala";
   }
 
   //PARA DIVIDIR UNA LINEA CSV
@@ -132,6 +144,67 @@ class CallCenter {
     return count;
   }
 
+  //FUNCIONES DE EXPORTACION
+
+  //EXPORTAR HISTORIAL DE LLAMADAS EN HTML
+  exportarHistorialHTML(){
+    if(this.llamadas.length === 0){
+      console.log("\nNo hay llamadas registradas");
+      return false;
+    }
+    
+    try{
+      const html = generadorReportes.generarHistorial(this.llamadas);
+      generadorReportes.guardarHTML("historial_llamadas.html", html);
+      console.log("\nHistorial exportado como 'historial_llamadas.html'");
+      return true;
+      
+    } catch (error) {
+      console.log("\nError al exportar historial:", error.message);
+      return false;
+    }
+}
+
+//EXPORTAR LISTADO DE OPERADORES EN HTML
+exportarOperadoresHTML(){
+  if(this.operadores.size === 0){
+      console.log("\nNo hay operadores registrados");
+      return false;
+  }
+    
+    try{
+      const html = generadorReportes.generarOperadores(this.operadores);
+      generadorReportes.guardarHTML("listado_operadores.html", html);
+      console.log("\nListado de operadores exportado como 'listado_operadores.html'");
+      return true;
+
+    } catch (error) {
+      console.log("\nError al exportar operadores:", error.message);
+      return false;
+    }
+}
+
+//EXPORTAR LISTADO DE CLIENTES EN HTML
+exportarClientesHTML(){
+  if(this.clientes.size === 0){
+    console.log("\nNo hay clientes registrados");
+    return false;
+  }
+    
+    try{
+      const html = generadorReportes.generarClientes(this.clientes);
+      generadorReportes.guardarHTML("listado_clientes.html", html);
+      console.log("\nListado de clientes exportado como 'listado_clientes.html'");
+      return true;
+
+    } catch (error){
+      console.log("\nError al exportar clientes:", error.message);
+      return false;
+    }
+}
+
+  
+
   //MENU PRINCIPAL
   mostrarMenu(){
     console.log("\n====MENU PRINCIPAL====");
@@ -169,17 +242,17 @@ function main(){
           break;
 
         case "2":
-          console.log("no hay");
+          callCenter.exportarHistorialHTML();
           preguntarOpcion();
           break;
 
         case "2":
-          console.log("no hay");
+          callCenter.exportarOperadoresHTML();
           preguntarOpcion();
           break;
         
         case "3":
-          console.log("no hay");
+          callCenter.exportarClientesHTML();
           preguntarOpcion();
           break;
 
@@ -224,3 +297,5 @@ function main(){
 if (require.main === module){
   main();
 }
+
+module.exports = CallCenter;
