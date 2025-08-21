@@ -49,14 +49,14 @@ class CallCenter {
           const calificacion = this.contarEstrellas(estrellasStr);
 
           //DETERMINAR CLASIFICACION
-          const clasificacion = this.clasificarLlamada(clasificacion);
+          const clasificacion = this.clasificarLlamada(calificacion);
 
           //GUARDAR OPERADOR
           if(!this.operadores.has(idOperador)){
             this.operadores.set(idOperador, {
               id: idOperador, 
               nombre: nombreOperador, 
-              llamadasAtendidad: 0
+              llamadasAtendidas: 0
             });
           }
 
@@ -144,7 +144,7 @@ class CallCenter {
     return count;
   }
 
-  //FUNCIONES DE EXPORTACION
+  //-----FUNCIONES DE EXPORTACION------
 
   //EXPORTAR HISTORIAL DE LLAMADAS EN HTML
   exportarHistorialHTML(){
@@ -160,7 +160,7 @@ class CallCenter {
       return true;
       
     } catch (error) {
-      console.log("\nError al exportar historial:", error.message);
+      console.log("\nError al exportar historial de llamadas");
       return false;
     }
 }
@@ -179,7 +179,7 @@ exportarOperadoresHTML(){
       return true;
 
     } catch (error) {
-      console.log("\nError al exportar operadores:", error.message);
+      console.log("\nError al exportar listado de operadores");
       return false;
     }
 }
@@ -198,9 +198,28 @@ exportarClientesHTML(){
       return true;
 
     } catch (error){
-      console.log("\nError al exportar clientes:", error.message);
+      console.log("\nError al exportar el listado de clientes");
       return false;
     }
+}
+
+//EXPORTAR RENDIMIENTO DE OPERADORES EN HTML
+exportarRendimientoHTML(){
+  if(this.operadores.size === 0){
+    console.log("\nNo hay operadores registrados");
+    return false;
+  }
+
+  try{
+    const html = generadorReportes.generarRendimientoOp(this.operadores, this.llamadas.length);
+    generadorReportes.guardarHTML("rendimiento_operadores.html", html);
+    console.log("\nRendimiento de operadores exportado como 'rendimiento_operadores.html'");
+    return true;
+
+  } catch (error) {
+    console.log("\nError al exportar el rendimiento de operadores")
+    return false;
+  }
 }
 
   
@@ -234,6 +253,7 @@ function main(){
     callCenter.mostrarMenu();
     rl.question("Seleccione una opcion: ", (opcion) => {
       switch (opcion){
+
         case "1":
           rl.question("Ingrese la ruta del archivo CSV: ", (ruta) => {
             callCenter.cargarArchivo(ruta);
@@ -245,24 +265,19 @@ function main(){
           callCenter.exportarHistorialHTML();
           preguntarOpcion();
           break;
-
-        case "2":
-          callCenter.exportarOperadoresHTML();
-          preguntarOpcion();
-          break;
         
         case "3":
-          callCenter.exportarClientesHTML();
+          callCenter.exportarOperadoresHTML();
           preguntarOpcion();
           break;
 
         case "4":
-          console.log("no hay");
+          callCenter.exportarClientesHTML();
           preguntarOpcion();
           break;
 
         case "5":
-          console.log("no hay");
+          callCenter.exportarRendimientoHTML();
           preguntarOpcion();
           break;
 
