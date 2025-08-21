@@ -165,65 +165,105 @@ class CallCenter {
     }
 }
 
-//EXPORTAR LISTADO DE OPERADORES EN HTML
-exportarOperadoresHTML(){
-  if(this.operadores.size === 0){
+  //EXPORTAR LISTADO DE OPERADORES EN HTML
+  exportarOperadoresHTML(){
+    if(this.operadores.size === 0){
+        console.log("\nNo hay operadores registrados");
+        return false;
+    }
+    
+      try{
+        const html = generadorReportes.generarOperadores(this.operadores);
+        generadorReportes.guardarHTML("listado_operadores.html", html);
+        console.log("\nListado de operadores exportado como 'listado_operadores.html'");
+        return true;
+
+      } catch (error) {
+        console.log("\nError al exportar listado de operadores");
+        return false;
+      }
+  }
+
+  //EXPORTAR LISTADO DE CLIENTES EN HTML
+  exportarClientesHTML(){
+    if(this.clientes.size === 0){
+      console.log("\nNo hay clientes registrados");
+      return false;
+    }
+    
+      try{
+        const html = generadorReportes.generarClientes(this.clientes);
+        generadorReportes.guardarHTML("listado_clientes.html", html);
+        console.log("\nListado de clientes exportado como 'listado_clientes.html'");
+        return true;
+
+      } catch (error){
+        console.log("\nError al exportar el listado de clientes");
+        return false;
+      }
+  }
+
+  //EXPORTAR RENDIMIENTO DE OPERADORES EN HTML
+  exportarRendimientoHTML(){
+    if(this.operadores.size === 0){
       console.log("\nNo hay operadores registrados");
       return false;
-  }
-    
+    }
+
     try{
-      const html = generadorReportes.generarOperadores(this.operadores);
-      generadorReportes.guardarHTML("listado_operadores.html", html);
-      console.log("\nListado de operadores exportado como 'listado_operadores.html'");
+      const html = generadorReportes.generarRendimientoOp(this.operadores, this.llamadas.length);
+      generadorReportes.guardarHTML("rendimiento_operadores.html", html);
+      console.log("\nRendimiento de operadores exportado como 'rendimiento_operadores.html'");
       return true;
 
     } catch (error) {
-      console.log("\nError al exportar listado de operadores");
+      console.log("\nError al exportar el rendimiento de operadores")
       return false;
     }
-}
-
-//EXPORTAR LISTADO DE CLIENTES EN HTML
-exportarClientesHTML(){
-  if(this.clientes.size === 0){
-    console.log("\nNo hay clientes registrados");
-    return false;
   }
-    
-    try{
-      const html = generadorReportes.generarClientes(this.clientes);
-      generadorReportes.guardarHTML("listado_clientes.html", html);
-      console.log("\nListado de clientes exportado como 'listado_clientes.html'");
-      return true;
 
-    } catch (error){
-      console.log("\nError al exportar el listado de clientes");
+  //MOSTRAR PORCENTAJE DE CLASIFICACION DE LLAMADAS
+  mostrarPorcentaje(){
+    if(this.llamadas.length === 0){
+      console.log("\nNo hay llamadas registradas");
       return false;
     }
-}
 
-//EXPORTAR RENDIMIENTO DE OPERADORES EN HTML
-exportarRendimientoHTML(){
-  if(this.operadores.size === 0){
-    console.log("\nNo hay operadores registrados");
-    return false;
-  }
+    let buenas = 0;
+    let medias = 0;
+    let malas = 0;
 
-  try{
-    const html = generadorReportes.generarRendimientoOp(this.operadores, this.llamadas.length);
-    generadorReportes.guardarHTML("rendimiento_operadores.html", html);
-    console.log("\nRendimiento de operadores exportado como 'rendimiento_operadores.html'");
+    //CONTAR LLAMADAS POR CLASIFICACION
+    for(const llamada of this.llamadas){
+      if(llamada.clasificacion === "Buena"){
+        buenas++;
+
+      } else if(llamada.clasificacion === "Media"){
+        medias++;
+
+      } else if(llamada.clasificacion === "Mala"){
+        malas++;
+      }
+    }
+
+    //CALCULAR PORCENTAJES
+    const total = this.llamadas.length;
+    const porcentajeBuenas = ((buenas / total) * 100).toFixed(2);
+    const porcentajeMedias = ((medias / total) * 100).toFixed(2);
+    const porcentajeMalas = ((malas / total) * 100).toFixed(2);
+
+    //MOSTRAR RESULTADOS
+    console.log("\n----PORCENTAJE DE LLAMADAS----");
+    console.log(`Llamadas Buenas: ${buenas} - ${porcentajeBuenas}%`);
+    console.log(`Llamadas Medias: ${medias} - ${porcentajeMedias}%`);
+    console.log(`Llamadas Malas: ${malas} - ${porcentajeMalas}%`);
+    console.log(`Total de llamadas: ${total}`);
+    console.log("--------------------------------")
+
     return true;
-
-  } catch (error) {
-    console.log("\nError al exportar el rendimiento de operadores")
-    return false;
   }
-}
 
   
-
   //MENU PRINCIPAL
   mostrarMenu(){
     console.log("\n====MENU PRINCIPAL====");
@@ -282,7 +322,7 @@ function main(){
           break;
 
         case "6":
-          console.log("no hay");
+          callCenter.mostrarPorcentaje();
           preguntarOpcion();
           break;
 
