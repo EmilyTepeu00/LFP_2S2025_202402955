@@ -257,8 +257,41 @@ class CallCenter {
     console.log(`Llamadas Buenas: ${buenas} - ${porcentajeBuenas}%`);
     console.log(`Llamadas Medias: ${medias} - ${porcentajeMedias}%`);
     console.log(`Llamadas Malas: ${malas} - ${porcentajeMalas}%`);
+    console.log("------------------------------")
     console.log(`Total de llamadas: ${total}`);
-    console.log("--------------------------------")
+    console.log("------------------------------")
+
+    return true;
+  }
+
+  //MOSTRAR CANTIDAD DE LLAMADAS POR CALIFICACION
+  mostrarCalificacion(){
+    if(this.llamadas.length === 0){
+      console.log("\nNo hay llamadas registradas");
+      return false;
+    }
+
+    //CONTADOR DE ESTRELLAS
+    const cantidadEstrellas = [0, 0, 0, 0, 0, 0] //de 0 - 5
+
+    //CONTAR LLAMADAS SEGUN LAS ESTRELLAS
+    for(const llamada of this.llamadas){
+      if(llamada.calificacion >= 0 && llamada.calificacion <= 5){
+        cantidadEstrellas[llamada.calificacion]++;
+      }
+    }
+
+    //MOSTRAR RESULTADOS
+    console.log("\n----CANTIDAD DE LLAMADAS----");
+    console.log(`0 estrellas: ${cantidadEstrellas[0]} llamadas`);
+    console.log(`1 estrella:  ${cantidadEstrellas[1]} llamadas`);
+    console.log(`2 estrellas: ${cantidadEstrellas[2]} llamadas`);
+    console.log(`3 estrellas: ${cantidadEstrellas[3]} llamadas`);
+    console.log(`4 estrellas: ${cantidadEstrellas[4]} llamadas`);
+    console.log(`5 estrellas: ${cantidadEstrellas[5]} llamadas`);
+    console.log("---------------------------")
+    console.log(`Total:       ${this.llamadas.length} llamadas`);
+    console.log("---------------------------")
 
     return true;
   }
@@ -266,7 +299,7 @@ class CallCenter {
   
   //MENU PRINCIPAL
   mostrarMenu(){
-    console.log("\n====MENU PRINCIPAL====");
+    console.log("\n==================MENU PRINCIPAL==================");
     console.log("1. Cargar registros de llamadas");
     console.log("2. Exportar historial de llamadas");
     console.log("3. Exportar listado de operadores");
@@ -275,7 +308,7 @@ class CallCenter {
     console.log("6. Mostrar porcentaje de clasificacion de llamadas");
     console.log("7. Mostrar cantidad de llamadas por calificacion");
     console.log("8. Salir");
-    console.log("===========================");
+    console.log("==================================================");
   }
 }
 
@@ -327,7 +360,7 @@ function main(){
           break;
 
         case "7":
-          console.log("no hay");
+          callCenter.mostrarCalificacion();
           preguntarOpcion();
           break;
 
