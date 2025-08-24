@@ -222,44 +222,83 @@ class CallCenter {
     }
   }
 
-  //MOSTRAR PORCENTAJE DE CLASIFICACION DE LLAMADAS
+  //MOSTRAR PORCENTAJE DE CLASIFICACION DE LLAMADAS POR OPERADOR
   mostrarPorcentaje(){
     if(this.llamadas.length === 0){
       console.log("\nNo hay llamadas registradas");
       return false;
     }
 
-    let buenas = 0;
-    let medias = 0;
-    let malas = 0;
+    //PARA ALMACENAR ESTADISTICAS POR OPERADOR
+    const estadisticasPorOperador = {};
 
-    //CONTAR LLAMADAS POR CLASIFICACION
-    for(const llamada of this.llamadas){
-      if(llamada.clasificacion === "Buena"){
-        buenas++;
-
-      } else if(llamada.clasificacion === "Media"){
-        medias++;
-
-      } else if(llamada.clasificacion === "Mala"){
-        malas++;
-      }
+    //INICIALIZAR ESTADISTICAS PARA CADA OPERADOR
+    for (const [id, operador] of this.operadores) {
+        estadisticasPorOperador[id] = {
+            nombre: operador.nombre,
+            buenas: 0,
+            medias: 0,
+            malas: 0,
+            total: 0
+        };
     }
 
-    //CALCULAR PORCENTAJES
-    const total = this.llamadas.length;
-    const porcentajeBuenas = ((buenas / total) * 100).toFixed(2);
-    const porcentajeMedias = ((medias / total) * 100).toFixed(2);
-    const porcentajeMalas = ((malas / total) * 100).toFixed(2);
+    //CONTAR LLAMADAS POR CLASIFICACION Y POR OPERADOR
+    for (const llamada of this.llamadas) {
+        if (estadisticasPorOperador[llamada.idOperador]) {
+            estadisticasPorOperador[llamada.idOperador].total++;
+            
+            if (llamada.clasificacion === "Buena") {
+                estadisticasPorOperador[llamada.idOperador].buenas++;
+            } else if (llamada.clasificacion === "Media") {
+                estadisticasPorOperador[llamada.idOperador].medias++;
+            } else if (llamada.clasificacion === "Mala") {
+                estadisticasPorOperador[llamada.idOperador].malas++;
+            }
+        }
+    }
 
-    //MOSTRAR RESULTADOS
-    console.log("\n----PORCENTAJE DE LLAMADAS----");
-    console.log(`Llamadas Buenas: ${buenas} - ${porcentajeBuenas}%`);
-    console.log(`Llamadas Medias: ${medias} - ${porcentajeMedias}%`);
-    console.log(`Llamadas Malas: ${malas} - ${porcentajeMalas}%`);
-    console.log("------------------------------")
+    //MOSTRAR RESULTADOS POR OPERADOR
+    console.log("\n----PORCENTAJE DE LLAMADAS POR OPERADOR----");
+    
+    for (const id in estadisticasPorOperador) {
+        const op = estadisticasPorOperador[id];
+        if (op.total > 0) {
+            const porcentajeBuenas = ((op.buenas / op.total) * 100).toFixed(2);
+            const porcentajeMedias = ((op.medias / op.total) * 100).toFixed(2);
+            const porcentajeMalas = ((op.malas / op.total) * 100).toFixed(2);
+            
+            console.log(`\nOperador: ${op.nombre} (ID: ${id})`);
+            console.log(`  Buenas: ${op.buenas} - ${porcentajeBuenas}%`);
+            console.log(`  Medias: ${op.medias} - ${porcentajeMedias}%`);
+            console.log(`  Malas:  ${op.malas} - ${porcentajeMalas}%`);
+            console.log(`  Total:  ${op.total} llamadas`);
+        }
+    }
+
+    //TOTAL GENERAL
+    let buenasTotal = 0;
+    let mediasTotal = 0;
+    let malasTotal = 0;
+
+    for (const llamada of this.llamadas) {
+        if (llamada.clasificacion === "Buena") buenasTotal++;
+        else if (llamada.clasificacion === "Media") mediasTotal++;
+        else if (llamada.clasificacion === "Mala") malasTotal++;
+    }
+
+    const total = this.llamadas.length;
+    const porcentajeBuenasTotal = ((buenasTotal / total) * 100).toFixed(2);
+    const porcentajeMediasTotal = ((mediasTotal / total) * 100).toFixed(2);
+    const porcentajeMalasTotal = ((malasTotal / total) * 100).toFixed(2);
+
+    console.log("\n-------TOTAL GENERAL-------");
+    console.log(`Llamadas Buenas: ${buenasTotal} - ${porcentajeBuenasTotal}%`);
+    console.log(`Llamadas Medias: ${mediasTotal} - ${porcentajeMediasTotal}%`);
+    console.log(`Llamadas Malas: ${malasTotal} - ${porcentajeMalasTotal}%`);
+    console.log("---------------------------");
     console.log(`Total de llamadas: ${total}`);
-    console.log("------------------------------")
+    console.log("---------------------------");
 
     return true;
   }
@@ -366,7 +405,8 @@ function main(){
 
         case "8":
           console.log("Saliendo del programa...");
-          rl.close()
+          rl.close();
+          break;
           
         default:
           console.log("Opcion no valida, intente de nuevo");
