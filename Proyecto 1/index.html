@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TourneyJS - Analizador de Torneos</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <h1>TournetJS - Analizador de Torneos</h1>
+    </header>
+
+    <main>
+        <section id="input-section">
+            <h2>Cargar Archivo de Torneo</h2>
+            <input type="file" id="fileInput" accept=".txt">
+            <button onclick="loadFile()">Cargar y Analizar</button>
+            <br>
+            <textarea id="codeInput" placeholder="O pega el contenido del archivo aquí..." rows="10" cols="50"></textarea>
+            <button onclick="analyzeText()">Analizar Texto</button>
+        </section>
+
+        <section id="results-section" style="display: none;">
+            <h2>Resultados de Analisis</h2>
+            <div id="tokens-container">
+                <h3>Tokens Reconocidos</h3>
+                <table id="tokens-table">
+                    <thead>
+                        <tr>
+                            <th>No.</th>
+                            <th>Lexema</th>
+                            <th>Tipo</th>
+                            <th>Linea</th>
+                            <th>Columna</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!--Tokens-->
+                    </tbody>
+                </table>
+            </div>
+
+            <div id="errors-container">
+                <h3>Errores Lexicos</h3>
+                <table id="errors-table">
+                    <thead>
+                        <tr>
+                            <th>No.</th>
+                            <th>Lexema</th>
+                            <th>Tipo de Error</th>
+                            <th>Descripcion</th>
+                            <th>Linea</th>
+                            <th>Columna</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!--Errores-->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>Proyecto 1 | Lenguajes Formales y de Programacion</p>
+    </footer>
+
+    <script src="styles.css"></script>
+</body>
+</html>
