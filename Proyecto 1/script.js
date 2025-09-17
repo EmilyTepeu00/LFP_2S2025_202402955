@@ -1,4 +1,4 @@
-//TIPOS DE TOKENS
+//TIPOS DE TOKENS Y PALABRAS RESERVADAS
 const TipoToken = {
     TORNEO: 'PALABRA_RESERVADA_TORNEO',
     EQUIPOS: 'PALABRA_RESERVADA_EQUIPOS',
@@ -31,7 +31,7 @@ const TipoToken = {
     PARENTESIS_DER: 'PARENTESIS_DERECHA',
     DOS_PUNTOS: 'DOS_PUNTOS',
     COMA: 'COMA',
-    COMILLAS: 'ATRIBUCOMILLASTO_',
+    COMILLAS: 'COMILLAS',
     VS: 'VS',
 
     CADENA: 'CADENA',
@@ -42,26 +42,28 @@ const TipoToken = {
 
 //PALABRAS RESERVADAS CON SU TIPO DE TOKEN
 const PalabrasReservadas = {
-    'torneo': TokenType.TORNEO,
-    'equipos': TokenType.EQUIPOS,
-    'eliminacion': TokenType.ELIMINACION,
-    'equipo': TokenType.EQUIPO,
-    'jugador': TokenType.JUGADOR,
-    'partido': TokenType.PARTIDO,
-    'goleador': TokenType.GOL,
-    'resultado': TokenType.RESULTADO,
-    'nombre': TokenType.NOMBRE,
-    'sede': TokenType.SEDE,
-    'posicion': TokenType.POSICION,
-    'numero': TokenType.NUMERO,
-    'edad': TokenType.EDAD,
-    'minuto': TokenType.MINUTO,
-    'vs': TokenType.VS,
-    'portero': TokenType.PORTERO,
-    'defensa': TokenType.DEFENSA,
-    'mediocampo': TokenType.MEDIOCAMPO,
-    'delantero': TokenType.DELANTERO,
+    'torneo': TipoToken.TORNEO,
+    'equipos': TipoToken.EQUIPOS,
+    'eliminacion': TipoToken.ELIMINACION,
+    'equipo': TipoToken.EQUIPO,
+    'jugador': TipoToken.JUGADOR,
+    'partido': TipoToken.PARTIDO,
+    'goleador': TipoToken.GOL,
+    'resultado': TipoToken.RESULTADO,
+    'nombre': TipoToken.NOMBRE,
+    'sede': TipoToken.SEDE,
+    'posicion': TipoToken.POSICION,
+    'numero': TipoToken.NUMERO,
+    'edad': TipoToken.EDAD,
+    'minuto': TipoToken.MINUTO,
+    'vs': TipoToken.VS,
+    'portero': TipoToken.PORTERO,
+    'defensa': TipoToken.DEFENSA,
+    'mediocampo': TipoToken.MEDIOCAMPO,
+    'delantero': TipoToken.DELANTERO,
 };
+
+//CLASES PARA TOKENS Y ERRORES
 
 //TOKEN ENCONTRADO DURANTE EL ANALISIS LEXICO
 class Token {
@@ -228,20 +230,20 @@ class AnalizadorLexico {
         const lineaInicial = this.linea;
         const columnaInicial = this.columna;
 
-        let TipoToken = null;
+        let tipoDeToken = null;
         switch (caracter) {
-            case '{': TipoToken = TipoToken.LLAVE_IZQ; break;
-            case '}': TipoToken = TipoToken.LLAVE_DER; break;
-            case '[': TipoToken = TipoToken.CORCHETE_IZQ; break;
-            case ']': TipoToken = TipoToken.CORCHETE_DER; break;
-            case '(': TipoToken = TipoToken.PARENTESIS_IZQ; break;
-            case ')': TipoToken = TipoToken.PARENTESIS_DER; break;
-            case ':': TipoToken = TipoToken.DOS_PUNTOS; break;
-            case ',': TipoToken = TipoToken.COMA; break;
+            case '{': tipoDeToken = TipoToken.LLAVE_IZQ; break;
+            case '}': tipoDeToken = TipoToken.LLAVE_DER; break;
+            case '[': tipoDeToken = TipoToken.CORCHETE_IZQ; break;
+            case ']': tipoDeToken = TipoToken.CORCHETE_DER; break;
+            case '(': tipoDeToken = TipoToken.PARENTESIS_IZQ; break;
+            case ')': tipoDeToken = TipoToken.PARENTESIS_DER; break;
+            case ':': tipoDeToken = TipoToken.DOS_PUNTOS; break;
+            case ',': tipoDeToken = TipoToken.COMA; break;
             default: return null;
         }
 
-        return new Token(TipoToken, caracter, lineaInicial, columnaInicial);
+        return new Token(tipoDeToken, caracter, lineaInicial, columnaInicial);
     }
 
     leerNumero() {
@@ -324,3 +326,95 @@ class AnalizadorLexico {
         }
     }
 }   
+
+//MANEJO DE LA INTERFAZ DE USUARIO
+let resultadosAnalisisActual = null;
+
+function cargarArchivo() {
+    const entradaArchivo = document.getElementById('fileInput');
+    const archivo = entradaArchivo.files[0];
+
+    if (archivo) {
+        const lector = new FileReader();
+        lector.onload = function(e) {
+            const contenido = e.target.result;
+            document.getElementById('codeInput').value = contenido;
+        };
+        lector.readAsText(archivo);
+    } else {
+        alert('Debe seleccionar un archivo primero');
+    }
+}
+
+function analizarTexto() {
+    const entradaCodigo = document.getElementById('codeInput');
+    const codigoFuente = entradaCodigo.value;
+
+    if (!codigoFuente.trim()) {
+        alert('El area del texto está vacia. Cargue o escriba el codigo');
+        return;
+    }
+
+    const analizador = new AnalizadorLexico(codigoFuente);
+    resultadosAnalisisActual = analizador.analizar();
+
+    mostrarResultados(resultadosAnalisisActual);
+    document.getElementById('results-section').style.display = 'block';
+}
+
+function mostrarResultados(resultado) {
+    mostrarTokens(resultado.tokens);
+    mostrarErrores(resultado.errores);
+}
+
+function mostrarTokens(tokens) {
+    const cuerpoTablaTokens = document.querySelector('#tokens-table tbody');
+    cuerpoTablaTokens.innerHTML = '';
+
+    tokens.forEach((token, indice) => {
+        if (token.tipo === TipoToken.EOF) return;
+
+        const fila = document.createElement('tr');
+        fila.innerHTML = `
+            <td>${indice + 1}</td>
+            <td>${escaparHtml(token.valor)}</td>
+            <td>${token.tipo}</td>
+            <td>${token.linea}</td>
+            <td>${token.columna}</td>
+        `;
+        cuerpoTablaTokens.appendChild(fila);
+    });
+}
+
+function mostrarErrores(errores) {
+    const cuerpoTablaErrores = document.querySelector('#errors-table tbody');
+    cuerpoTablaErrores.innerHTML = '';
+
+    if (errores.length === 0) {
+        cuerpoTablaErrores.innerHTML = '<tr><td colspan="6">No se encontraron errores léxicos.</td></tr>';
+        return;
+    }
+
+    errores.forEach((error, indice) => {
+        const fila = document.createElement('tr');
+        fila.innerHTML = `
+            <td>${indice + 1}</td>
+            <td>${escaparHtml(error.lexema)}</td>
+            <td>${error.tipoError}</td>
+            <td>${error.descripcion}</td>
+            <td>${error.linea}</td>
+            <td>${error.columna}</td>
+        `;
+        cuerpoTablaErrores.appendChild(fila);
+    });
+}
+
+function escaparHtml(texto) {
+    if (typeof texto !== 'string') return texto;
+    return texto
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
