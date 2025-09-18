@@ -355,11 +355,45 @@ function analizarTexto() {
         return;
     }
 
+    //ANALISIS LEXICO
     const analizador = new AnalizadorLexico(codigoFuente);
-    resultadosAnalisisActual = analizador.analizar();
+    const resultadosLexico = analizador.analizar();
 
-    mostrarResultados(resultadosAnalisisActual);
+    mostrarResultados(resultadosLexico);
+
+    //ANALISIS SINTACTICO (si no hay errores lexicos)
+    if (resultadosLexico.errores.length === 0) {
+        const parser = new Parser(resultadosLexico.tokens);
+        const resultadosSintactico = parser.analizar();
+
+        if (resultadosSintactico.exito) {
+            console.log("Análisis sintáctico exitoso", resultadosSintactico.torneo);
+            //falta el procesamiento del torneooooo
+
+        } else {
+            console.log("Errores sintácticos", resultadosSintactico.errores);
+            mostrarErroresSintacticos(resultadosSintactico.errores);
+        }
+    }
+
     document.getElementById('results-section').style.display = 'block';
+}
+
+function mostrarErroresSintacticos(errores) {
+    const cuerpoTablaErrores = document.querySelector('#errors-table tbody');
+
+    errores.forEach((error, indice) => {
+        const fila = document.createElement('tr');
+        fila.innerHTML = `
+            <td>${indice + 1}</td>
+            <td>${escaparHtml(error.descripcion)}</td>
+            <td>${error.tipo}</td>
+            <td>${error.descripcion}</td>
+            <td>${error.linea || 'N/A'}</td>
+            <td>${error.columna || 'N/A'}</td>
+        `;
+        cuerpoTablaErrores.appendChild(fila);
+    });
 }
 
 function mostrarResultados(resultado) {
