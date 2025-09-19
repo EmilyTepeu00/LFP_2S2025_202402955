@@ -10,7 +10,7 @@ class Parser {
     //METODO PARA ANALIZAR SINTACTICAMENTE
     analizar() {
         this.erroresSintacticos = [];
-        
+    
         try {
             this.torneo = this.analizarTorneo();
             return {
@@ -18,6 +18,7 @@ class Parser {
                 torneo: this.torneo,
                 errores: this.erroresSintacticos
             };
+
         } catch (error) {
             return {
                 exito: false,
@@ -44,18 +45,24 @@ class Parser {
 
     coincidir(tipoEsperado) {
         const token = this.tokenActual();
+
         if (token.tipo === tipoEsperado) {
             this.avanzar();
             return token;
         
         } else {
-            this.erroresSintacticos.push({
+            const errorMsg = `Se esperaba ${tipoEsperado} pero se encontró ${token.tipo} (${token.valor})`;
+            const error = {
                 tipo: 'Error Sintactico',
-                descripcion: `Se esperaba ${tipoEsperado} pero se encontró ${token.tipo}`,
+                descripcion: errorMsg,
                 linea: token.linea,
                 columna: token.columna
-            });
-            return null;
+            };
+
+            this.erroresSintacticos.push(error);
+            console.error("ERROR SINTACTICO", error);
+
+            throw new Error(errorMsg)
         }
     }
 
@@ -65,7 +72,7 @@ class Parser {
 
     //-----REGLAS GRAMATICALES-----
 
-    analicarTorneo(){
+    analizarTorneo(){
         this.coincidir('PALABRA_RESERVADA_TORNEO');
         this.coincidir('LLAVE_IZQUIERDA');
 
@@ -99,7 +106,7 @@ class Parser {
 
         this.coincidir('LLAVE_DERECHA')
 
-        const torneo = new this.torneo(nombre, cantidadEquipos, sede);
+        const torneo = new Torneo(nombre, cantidadEquipos, sede);
 
         //ANALIZAR EQUIPOS
         if (this.esTipo('PALABRA_RESERVADA_EQUIPOS')) {
@@ -147,7 +154,8 @@ class Parser {
                 equipo.jugadores.push(this.analizarJugador());
 
             } else {
-                this.avanzar();
+                const token = this.tokenActual();
+                throw new Error(`Token inesperado en equipo: ${token.tipo} (${token.valor})`);
             }
             
             if (this.esTipo('COMA')) {
@@ -182,15 +190,22 @@ class Parser {
                             this.coincidir('VALOR_DEFENSA') || 
                             this.coincidir('VALOR_MEDIOCAMPO') || 
                             this.coincidir('VALOR_DELANTERO');
-                jugador.posicion = valor.tipo.replace('VALOR_', '');
+
+                if (valor) {
+                    jugador.posicion = valor.tipo.replace('VALOR_', '');
+                }
 
             } else if (atributo.tipo === 'ATRIBUTO_NUMERO') {
                 const valor = this.coincidir('NUMERO');
-                jugador.numero = parseInt(valor.valor);
-
+                if (valor) {
+                    jugador.numero = parseInt(valor.valor);
+                }
+                
             } else if (atributo.tipo === 'ATRIBUTO_EDAD') {
                 const valor = this.coincidir('NUMERO');
-                jugador.edad = parseInt(valor.valor);
+                if (valor) {
+                    jugador.edad = parseInt(valor.valor);
+                }
             }
             
             if (this.esTipo('COMA')) {
@@ -293,19 +308,21 @@ class Parser {
         const nombreGoleadorToken = this.coincidir('CADENA');
         const goleador = new Goleador(nombreGoleadorToken.valor, 0);
 
+        this.coincidir('CORCHETE_IZQUIERDA');
+
         while (!this.esTipo('CORCHETE_DERECHA')) {
-            if (this.esTipo('ATRIBUTO_MINUTO')) {
-                this.coincidir('ATRIBUTO_MINUTO');
-                this.coincidir('DOS_PUNTOS');
-                const minutoToken = this.coincidir('NUMERO');
-                goleador.minuto = parseInt(minutoToken.valor);
-
-            } else {
-                this.avanzar();
-            }
+        if (this.esTipo('ATRIBUTO_MINUTO')) {
+            this.coincidir('ATRIBUTO_MINUTO');
+            this.coincidir('DOS_PUNTOS');
+            const minutoToken = this.coincidir('NUMERO');
+            goleador.minuto = parseInt(minutoToken.valor);
+            
+        } else {
+            this.avanzar();
         }
-
-        this.coincidir('CORCHETE_DERECHA');
-        return goleador;
+    }
+    
+    this.coincidir('CORCHETE_DERECHA');
+    return goleador;
     }
 }

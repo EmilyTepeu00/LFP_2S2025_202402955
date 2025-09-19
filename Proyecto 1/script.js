@@ -371,7 +371,7 @@ function analizarTexto() {
             //falta el procesamiento del torneooooo
 
         } else {
-            console.log("Errores sintácticos", resultadosSintactico.errores);
+            console.log("Errores sintacticos", resultadosSintactico.errores);
             mostrarErroresSintacticos(resultadosSintactico.errores);
         }
     }
@@ -381,6 +381,12 @@ function analizarTexto() {
 
 function mostrarErroresSintacticos(errores) {
     const cuerpoTablaErrores = document.querySelector('#errors-table tbody');
+    cuerpoTablaErrores.innerHTML = '';
+
+    if (errores.length === 0) {
+        cuerpoTablaErrores.innerHTML = '<tr><td colspan="6">No se encontraron errores sintácticos.</td></tr>';
+        return;
+    }
 
     errores.forEach((error, indice) => {
         const fila = document.createElement('tr');

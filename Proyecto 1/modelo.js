@@ -1,16 +1,16 @@
 //MODELO DE DATOS PARA LA ESTRUCTURA DEL TORNEO
 
 class Torneo {
-    constructor(nombre, cantiadEquipos, sede) {
+    constructor(nombre, cantidadEquipos, sede) {
         this.nombre = nombre;
-        this.cantiadEquipos = cantiadEquipos;
+        this.cantidadEquipos = cantidadEquipos;
         this.sede = sede;
-        this.cantiadEquipos = [];
+        this.equipos = [];
         this.fases = [];
     }
 }
 
-class Equipos {
+class Equipo {
     constructor(nombre) {
         this.nombre = nombre;
         this.jugadores = [];
