@@ -368,7 +368,7 @@ function analizarTexto() {
 
         if (resultadosSintactico.exito) {
             console.log("Análisis sintáctico exitoso", resultadosSintactico.torneo);
-            //falta el procesamiento del torneooooo
+            mostrarReportes(resultadosSintactico.torneo);
 
         } else {
             console.log("Errores sintacticos", resultadosSintactico.errores);
@@ -458,3 +458,23 @@ function escaparHtml(texto) {
         .replace(/"/g, "&quot;")
         .replace(/'/g, "&#039;");
 }
+
+//GENERACION Y VISUALIZACION DE REPORTES
+function mostrarReportes(torneo) {
+    const generador = new GenradorReportes(torneo);
+    const reportes = generador.generarTodosReportes();
+    
+    //Contenedor de reportes
+    const reportesContainer = document.createElement('div');
+    reportesContainer.id = 'reportes-container';
+    reportesContainer.innerHTML = `
+        <h2>Reportes Generados</h2>
+        ${reportes.general}
+        ${reportes.equipos}
+        ${reportes.bracket}
+    `;
+
+    const resultsSection = document.getElementById('results-section');
+    resultsSection.appendChild(reportesContainer);
+}
+
