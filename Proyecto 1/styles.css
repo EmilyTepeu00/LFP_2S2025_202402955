@@ -66,3 +66,48 @@ th {
 #errors-container {
     margin-top: 30px;
 }
+
+/* ESTILO PARA REPORTES */
+#reportes-container {
+    margin-top: 30px;
+    padding: 20px;
+    background: white;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.reporte {
+    margin-bottom: 30px;
+    padding: 15px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    background: #f9f9f9;
+}
+
+.reporte h3 {
+    color: #2c3e50;
+    border-bottom: 2px solid #3498db;
+    padding-bottom: 10px;
+    margin-top: 0;
+}
+
+.reporte table {
+    width: 100%;
+    background: white;
+    margin-top: 10px;
+}
+
+.reporte th {
+    background: #34495e;
+    color: white;
+    padding: 12px;
+}
+
+.reporte td {
+    padding: 10px;
+    border-bottom: 1px solid #ecf0f1;
+}
+
+.reporte tr:hover {
+    background: #ecf0f1;
+}
