@@ -111,3 +111,13 @@ th {
 .reporte tr:hover {
     background: #ecf0f1;
 }
+
+.advertencia {
+    background-color: #fff3cd;
+    border: 1px solid #ffeaa7;
+    color: #856404;
+    padding: 10px;
+    border-radius: 5px;
+    margin-bottom: 20px;
+    font-size: 14px;
+}

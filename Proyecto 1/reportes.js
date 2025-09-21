@@ -1,20 +1,23 @@
-class GenradorReportes {
+class GeneradorReportes {
     constructor(torneo) {
         this.torneo = torneo;
     }
 
     //REPORTE DE INFORMACION GENERAL
     generarReporteGeneral() {
+        const totalJugadores = this.calcularTotalJugadores();
+        const edadPromedio = this.calcularEdadPromedio();
+    
         return `
         <div class="reporte">
             <h3>Información General del Torneo</h3>
             <table>
                 <tr><th>Estadística</th><th>Valor</th></tr>
-                <tr><td>Nombre del Torneo</td><td>${this.torneo.nombre}</td></tr>
-                <tr><td>Sede</td><td>${this.torneo.sede}</td></tr>
-                <tr><td>Equipos Participantes</td><td>${this.torneo.equipos.length}</td></tr>
-                <tr><td>Total de Jugadores</td><td>${this.calcularTotalJugadores()}</td></tr>
-                <tr><td>Edad Promedio</td><td>${this.calcularEdadPromedio()} años</td></tr>
+                <tr><td>Nombre del Torneo</td><td>${this.torneo.nombre || 'No especificado'}</td></tr>
+                <tr><td>Sede</td><td>${this.torneo.sede || 'No especificada'}</td></tr>
+                <tr><td>Equipos Participantes</td><td>${this.torneo.equipos ? this.torneo.equipos.length : 0}</td></tr>
+                <tr><td>Total de Jugadores</td><td>${totalJugadores}</td></tr>
+                <tr><td>Edad Promedio</td><td>${edadPromedio} años</td></tr>
             </table>
         </div>
         `;
@@ -79,19 +82,34 @@ class GenradorReportes {
     }
 
     //-----METODOS AUXILIARES-----
+    
     calcularTotalJugadores() {
-        return this.torneo.equipos.reduce((total, equipo) => total + equipo.jugadores.length, 0);
+        if (!this.torneo.equipos) return 0;
+        return this.torneo.equipos.reduce((total, equipo) => {
+            return total + (equipo.jugadores ? equipo.jugadores.length : 0);
+        }, 0);
     }
 
     calcularEdadPromedio() {
-        const todosJugadores = this.torneo.equipos.flatMap(equipo => equipo.jugadores);
-        const totalEdad = todosJugadores.reduce((sum, jugador) => sum + jugador.edad, 0);
-        return todosJugadores.length > 0 ? (totalEdad / todosJugadores.length).toFixed(2) : '0';
+        if (!this.torneo.equipos) return '0';
+    
+        const todosJugadores = this.torneo.equipos.flatMap(equipo => 
+            equipo.jugadores ? equipo.jugadores : []
+        );
+    
+        if (todosJugadores.length === 0) return '0';
+    
+        const totalEdad = todosJugadores.reduce((sum, jugador) => {
+            return sum + (jugador.edad || 0);
+        }, 0);
+    
+        return (totalEdad / todosJugadores.length).toFixed(2);
     }
 
     calcularEdadPromedioEquipo(equipo) {
-        const totalEdad = equipo.jugadores.reduce((sum, jugador) => sum + jugador.edad, 0);
-        return equipo.jugadores.length > 0 ? (totalEdad / equipo.jugadores.length).toFixed(2) : '0';
+        if (!equipo.jugadores || equipo.jugadores.length === 0) return '0';
+        const totalEdad = equipo.jugadores.reduce((sum, jugador) => sum + (jugador.edad || 0), 0);
+        return (totalEdad / equipo.jugadores.length).toFixed(2);
     }
 
     //GENERAR TODOS LOS REPORTES

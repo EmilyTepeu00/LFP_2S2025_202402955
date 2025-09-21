@@ -63,7 +63,7 @@ const PalabrasReservadas = {
     'delantero': TipoToken.DELANTERO,
 };
 
-//CLASES PARA TOKENS Y ERRORES
+//-----CLASES PARA TOKENS Y ERRORES-----
 
 //TOKEN ENCONTRADO DURANTE EL ANALISIS LEXICO
 class Token {
@@ -150,7 +150,7 @@ class AnalizadorLexico {
             this.errores.push(new ErrorLexico(
                 caracter,
                 "Simbolo inesperado",
-                `Carácter '${caracter}' no reconocido en el lenguaje.`,
+                `Caracter '${caracter}' no reconocido en el lenguaje.`,
                 lineaInicial,
                 columnaInicial
             ));
@@ -169,12 +169,13 @@ class AnalizadorLexico {
         };
     }
 
-    //FUNCIONES AUXILIARES PARA EL AFD
+    //---FUNCIONES AUXILIARES PARA EL AFD---
 
     avanzar(){
         if (this.fuente[this.posicion] === '\n') {
             this.linea++;
             this.columna = 1;
+
         } else {
             this.columna++;
         }
@@ -222,7 +223,7 @@ class AnalizadorLexico {
     }
 
     esCaracterIdentificador(caracter) {
-        return this.esLetra(caracter) || this.esDigito(caracter) || caracter === '_' || caracter === ' ';
+        return this.esLetra(caracter) || this.esDigito(caracter) || caracter === '_';
     }
 
     //LECTURA DE TOKENS ESPECIFICOS
@@ -274,12 +275,15 @@ class AnalizadorLexico {
                 valor += caracter;
                 caracterEscapado = false;
                 this.avanzar();
+
             } else if (caracter === '\\') {
                 caracterEscapado = true;
                 this.avanzar();
+
             } else if (caracter === '"') {
                 this.avanzar(); //Saltar la comilla final
                 return new Token(TipoToken.CADENA, valor, lineaInicial, columnaInicial);
+
             } else if (caracter === '\n') {
                 this.errores.push(new ErrorLexico(
                     valor + caracter,
@@ -321,6 +325,7 @@ class AnalizadorLexico {
 
         if (PalabrasReservadas.hasOwnProperty(valorMinusculas)) {
             return new Token(PalabrasReservadas[valorMinusculas], valor, lineaInicial, columnaInicial);
+
         } else {
             return new Token(TipoToken.IDENTIFICADOR, valor, lineaInicial, columnaInicial);
         }
@@ -329,6 +334,7 @@ class AnalizadorLexico {
 
 //MANEJO DE LA INTERFAZ DE USUARIO
 let resultadosAnalisisActual = null;
+let torneoActual = null;
 
 function cargarArchivo() {
     const entradaArchivo = document.getElementById('fileInput');
@@ -341,6 +347,7 @@ function cargarArchivo() {
             document.getElementById('codeInput').value = contenido;
         };
         lector.readAsText(archivo);
+
     } else {
         alert('Debe seleccionar un archivo primero');
     }
@@ -351,7 +358,7 @@ function analizarTexto() {
     const codigoFuente = entradaCodigo.value;
 
     if (!codigoFuente.trim()) {
-        alert('El area del texto está vacia. Cargue o escriba el codigo');
+        alert('El area del texto esta vacia. Cargue o escriba el codigo');
         return;
     }
 
@@ -361,30 +368,40 @@ function analizarTexto() {
 
     mostrarResultados(resultadosLexico);
 
-    //ANALISIS SINTACTICO (si no hay errores lexicos)
-    if (resultadosLexico.errores.length === 0) {
+    //Intentar el analisis sintactico, incluso con errores lexicos
+    try {
         const parser = new Parser(resultadosLexico.tokens);
         const resultadosSintactico = parser.analizar();
 
         if (resultadosSintactico.exito) {
-            console.log("Análisis sintáctico exitoso", resultadosSintactico.torneo);
-            mostrarReportes(resultadosSintactico.torneo);
-
+            console.log("✅ Analisis sintactico EXITOSO", resultadosSintactico.torneo);
+            torneoActual = resultadosSintactico.torneo;
         } else {
-            console.log("Errores sintacticos", resultadosSintactico.errores);
+            console.log("❌ Analisis sintactico FALLIDO", resultadosSintactico.errores);
             mostrarErroresSintacticos(resultadosSintactico.errores);
+            //Intentar crear un torneo basico para reportes
+            torneoActual = new Torneo("Torneo con Errores", 0, "");
         }
+        
+        //Mostrar el boton de generar reportes
+        document.getElementById('btnGenerarReportes').style.display = 'block';
+
+    } catch (error) {
+        console.error("Error en analisis sintactico:", error);
+        torneoActual = new Torneo("Torneo con Errores", 0, "");
+        document.getElementById('btnGenerarReportes').style.display = 'block';
     }
 
     document.getElementById('results-section').style.display = 'block';
 }
+
 
 function mostrarErroresSintacticos(errores) {
     const cuerpoTablaErrores = document.querySelector('#errors-table tbody');
     cuerpoTablaErrores.innerHTML = '';
 
     if (errores.length === 0) {
-        cuerpoTablaErrores.innerHTML = '<tr><td colspan="6">No se encontraron errores sintácticos.</td></tr>';
+        cuerpoTablaErrores.innerHTML = '<tr><td colspan="6">No se encontraron errores sintacticos</td></tr>';
         return;
     }
 
@@ -392,15 +409,16 @@ function mostrarErroresSintacticos(errores) {
         const fila = document.createElement('tr');
         fila.innerHTML = `
             <td>${indice + 1}</td>
-            <td>${escaparHtml(error.descripcion)}</td>
-            <td>${error.tipo}</td>
-            <td>${error.descripcion}</td>
+            <td>${escaparHtml(error.lexema || '')}</td>
+            <td>${escaparHtml(error.tipo || 'Error Sintactico')}</td>
+            <td>${escaparHtml(error.descripcion || 'Error desconocido')}</td>
             <td>${error.linea || 'N/A'}</td>
             <td>${error.columna || 'N/A'}</td>
         `;
         cuerpoTablaErrores.appendChild(fila);
     });
 }
+
 
 function mostrarResultados(resultado) {
     mostrarTokens(resultado.tokens);
@@ -431,7 +449,7 @@ function mostrarErrores(errores) {
     cuerpoTablaErrores.innerHTML = '';
 
     if (errores.length === 0) {
-        cuerpoTablaErrores.innerHTML = '<tr><td colspan="6">No se encontraron errores léxicos.</td></tr>';
+        cuerpoTablaErrores.innerHTML = '<tr><td colspan="6">No se encontraron errores lwxicos</td></tr>';
         return;
     }
 
@@ -459,22 +477,31 @@ function escaparHtml(texto) {
         .replace(/'/g, "&#039;");
 }
 
-//GENERACION Y VISUALIZACION DE REPORTES
-function mostrarReportes(torneo) {
-    const generador = new GenradorReportes(torneo);
+//GENERACION DE REPORTES
+function generarReportes() {
+    if (!torneoActual) {
+        torneoActual = new Torneo("Torneo con Errores", 0, "");
+    }
+
+    console.log("📊 Generando reportes para:", torneoActual);
+    console.log("📊 Equipos:", torneoActual.equipos);
+    console.log("📊 Fases:", torneoActual.fases);
+    
+    const generador = new GeneradorReportes(torneoActual);
     const reportes = generador.generarTodosReportes();
     
-    //Contenedor de reportes
-    const reportesContainer = document.createElement('div');
-    reportesContainer.id = 'reportes-container';
+    console.log("📊 HTML de reportes:", reportes);
+    
+    const reportesContainer = document.getElementById('reportes-container');
     reportesContainer.innerHTML = `
-        <h2>Reportes Generados</h2>
-        ${reportes.general}
-        ${reportes.equipos}
-        ${reportes.bracket}
+        <h2>📊 Reportes Generados</h2>
+        <div class="advertencia">
+            <strong>Nota:</strong> Algunos datos pueden estar incompletos debido a errores en el archivo
+        </div>
+        ${reportes.general || '<p>No hay reporte general</p>'}
+        ${reportes.equipos || '<p>No hay reporte de equipos</p>'}
+        ${reportes.bracket || '<p>No hay reporte de bracket</p>'}
     `;
-
-    const resultsSection = document.getElementById('results-section');
-    resultsSection.appendChild(reportesContainer);
+    
+    reportesContainer.style.display = 'block';
 }
-
