@@ -117,7 +117,8 @@ class GeneradorReportes {
         return {
             general: this.generarReporteGeneral(),
             equipos: this.generarReporteEquipos(),
-            bracket: this.generarReporteBracket()
+            bracket: this.generarReporteBracket(),
+            graphviz: this.generarGraphviz()
         };
     }
 
@@ -140,7 +141,7 @@ class GeneradorReportes {
 
         //Organizar fases por orden logico
         const fasesOrdenadas = this.ordenarFases(this.torneo.fases);
-
+    
         //Generar nodos y conexiones
         let partidoId = 1;
         let equiposPrevios = new Set();
@@ -155,7 +156,7 @@ class GeneradorReportes {
 
             fase.partidos.forEach((partido, partidoIndex) => {
                 const nodoId = `partido_${faseIndex}_${partidoIndex}`;
-
+            
                 //Crear nodo del partido
                 dot += `    ${nodoId} [label="${partido.equipoLocal} vs ${partido.equipoVisitante}\\n${partido.resultado || 'Pendiente'}", width=3, height=1.5];\n`;
 
@@ -182,12 +183,12 @@ class GeneradorReportes {
         });
 
         dot += "}";
-        
+    
         return this.mostrarGraphviz(dot);
     }
 
     //PARA ORDENAR FASES
-    orderarFases(fases) {
+    ordenarFases(fases) {
         const ordenFases = ['cuartos', 'semifinal', 'final', 'tercer lugar'];
         return fases.sort((a, b) => {
             const indexA = ordenFases.indexOf(a.nombre.toLowerCase());

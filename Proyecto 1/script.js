@@ -449,7 +449,7 @@ function mostrarErrores(errores) {
     cuerpoTablaErrores.innerHTML = '';
 
     if (errores.length === 0) {
-        cuerpoTablaErrores.innerHTML = '<tr><td colspan="6">No se encontraron errores lwxicos</td></tr>';
+        cuerpoTablaErrores.innerHTML = '<tr><td colspan="6">No se encontraron errores lexicos</td></tr>';
         return;
     }
 
@@ -484,8 +484,6 @@ function generarReportes() {
     }
 
     console.log("📊 Generando reportes para:", torneoActual);
-    console.log("📊 Equipos:", torneoActual.equipos);
-    console.log("📊 Fases:", torneoActual.fases);
     
     const generador = new GeneradorReportes(torneoActual);
     const reportes = generador.generarTodosReportes();
@@ -501,7 +499,56 @@ function generarReportes() {
         ${reportes.general || '<p>No hay reporte general</p>'}
         ${reportes.equipos || '<p>No hay reporte de equipos</p>'}
         ${reportes.bracket || '<p>No hay reporte de bracket</p>'}
+        ${reportes.graphviz || '<p>No hay diagrama Graphviz</p>'}
     `;
     
     reportesContainer.style.display = 'block';
+
+    mostrarNotificacion('✅ Reportes generados con exito');
+}
+
+function mostrarNotificacion(mensaje) {
+    //Elemento de notificacion
+    const notificacion = document.createElement('div');
+    notificacion.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: #4CAF50;
+        color: white;
+        padding: 15px 20px;
+        border-radius: 5px;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        z-index: 1000;
+        font-family: Arial, sans-serif;
+        animation: slideIn 0.3s ease-out;
+    `;
+    notificacion.textContent = mensaje;
+
+    //Animacion CSS
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes slideIn {
+            from { transform: translateX(100px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        @keyframes slideOut {
+            from { transform: translateX(0); opacity: 1; }
+            to { transform: translateX(100px); opacity: 0; }
+        }
+    `;
+    document.head.appendChild(style);
+
+    //Añadir al documento
+    document.body.appendChild(notificacion);
+
+    //Auto-eliminar despues de 3 segundos
+    setTimeout(() => {
+        notificacion.style.animation = 'slideOut 0.3s ease-out';
+        setTimeout(() => {
+            if (notificacion.parentNode) {
+                notificacion.parentNode.removeChild(notificacion);
+            }
+        }, 300);
+    }, 3000);
 }
