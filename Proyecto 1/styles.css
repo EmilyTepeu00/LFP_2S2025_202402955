@@ -93,23 +93,40 @@ th {
 
 .reporte table {
     width: 100%;
-    background: white;
-    margin-top: 10px;
+    border-collapse: collapse;
+    margin: 15px 0;
+    font-size: 14px;
 }
 
 .reporte th {
-    background: #34495e;
+    background: #2c3e50;
     color: white;
     padding: 12px;
+    text-align: center;
+    font-weight: bold;
 }
 
 .reporte td {
     padding: 10px;
     border-bottom: 1px solid #ecf0f1;
+    text-align: center;
+}
+
+.reporte tr:nth-child(even) {
+    background-color: #f8f9fa;
 }
 
 .reporte tr:hover {
-    background: #ecf0f1;
+    background-color: #e9ecef;
+}
+
+.reporte .goleadores-table td:nth-child(5) {
+    text-align: left;
+}
+
+.reporte td:first-child {
+    font-weight: bold;
+    background-color: #f1f8ff;
 }
 
 .advertencia {

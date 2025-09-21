@@ -497,7 +497,8 @@ function generarReportes() {
             <strong>Nota:</strong> Algunos datos pueden estar incompletos debido a errores en el archivo
         </div>
         ${reportes.general || '<p>No hay reporte general</p>'}
-        ${reportes.equipos || '<p>No hay reporte de equipos</p>'}
+        ${reportes.estadisticas || '<p>No hay reporte de estadisticas</p>'}
+        ${reportes.goleadores || '<p>No hay reporte de goleadores</p>'}
         ${reportes.bracket || '<p>No hay reporte de bracket</p>'}
         ${reportes.graphviz || '<p>No hay diagrama Graphviz</p>'}
     `;
@@ -539,7 +540,7 @@ function mostrarNotificacion(mensaje) {
     `;
     document.head.appendChild(style);
 
-    //Añadir al documento
+    //Añadir al programa
     document.body.appendChild(notificacion);
 
     //Auto-eliminar despues de 3 segundos

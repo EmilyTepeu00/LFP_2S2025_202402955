@@ -9,24 +9,30 @@ class Parser {
 
     //METODO PARA ANALIZAR SINTACTICAMENTE
     analizar() {
-        this.erroresSintacticos = [];
-    
-        try {
-            this.torneo = this.analizarTorneo();
-            return {
-                exito: true,
-                torneo: this.torneo,
-                errores: this.erroresSintacticos
-            };
+    this.erroresSintacticos = [];
 
-        } catch (error) {
-            return {
-                exito: false,
-                torneo: null,
-                errores: this.erroresSintacticos
-            };
+    try {
+        this.torneo = this.analizarTorneo();
+        
+        //Calcular estadisticas despues de analizar
+        if (this.torneo) {
+            this.torneo.calcularEstadisticas();
         }
+        
+        return {
+            exito: true,
+            torneo: this.torneo,
+            errores: this.erroresSintacticos
+        };
+
+    } catch (error) {
+        return {
+            exito: false,
+            torneo: null,
+            errores: this.erroresSintacticos
+        };
     }
+}
 
     //-----FUNCIONES AUXILIARES-----
 
