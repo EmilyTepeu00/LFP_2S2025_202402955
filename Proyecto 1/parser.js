@@ -62,12 +62,19 @@ class Parser {
             const simbolos = [
                 'LLAVE_IZQUIERDA','LLAVE_DERECHA',
                 'CORCHETE_IZQUIERDA','CORCHETE_DERECHA',
-                'PARENTESIS_IZQUIERDA','PARENTESIS_DERECHA',
                 'DOS_PUNTOS','COMA'
             ];
 
+            let esSimbolo = false;
+            for (let i = 0; i < simbolos.length; i++) {
+                if (simbolos[i] === tipoEsperado) {
+                    esSimbolo = true;
+                    break;
+                }
+            }
+
             let tipoError = 'Error Sintactico';
-            if (simbolos.includes(tipoEsperado)) {
+            if (esSimbolo) {
                 tipoError = 'Falta de simbolo esperado';
 
             } else if (tipoEsperado === 'CADENA' || token.tipo === 'CADENA') {
@@ -104,7 +111,7 @@ class Parser {
         try {
             this.coincidir('PALABRA_RESERVADA_TORNEO');
         } catch (e) {
-            //Si no encuentra TORNEO -> torneo vacio
+            //Si no encuentra TORNEO --> torneo vacio
             return new Torneo("", 0, "");
         }
         
@@ -301,13 +308,21 @@ class Parser {
                 const valor = this.coincidir('CADENA');
                 if (valor) {
                     const posicionesValidas = ['PORTERO', 'DEFENSA', 'MEDIOCAMPO', 'DELANTERO'];
-                    if (posicionesValidas.includes(valor.valor)) {
+                    let posicionValida = false;
+                    
+                    for (let i = 0; i < posicionesValidas.length; i++) {
+                        if (posicionesValidas[i] === valor.valor) {
+                            posicionValida = true;
+                            break;
+                        }
+                    }
+                    
+                    if (posicionValida) {
                         jugador.posicion = valor.valor;
-
                     } else {
                         this.erroresSintacticos.push({
                             tipo: 'Valor invalido',
-                            descripcion: `Posición '${valor.valor}' no válida`,
+                            descripcion: `Posición '${valor.valor}' no valida`,
                             linea: valor.linea,
                             columna: valor.columna,
                             lexema: valor.valor

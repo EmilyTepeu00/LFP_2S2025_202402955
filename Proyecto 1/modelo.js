@@ -62,7 +62,9 @@ class Goleador {
 //---METODO PARA CALCULAR ESTADISTICAS---
 Equipo.prototype.actualizarEstadisticas = function(partido, esLocal) {
     if (partido.resultado && partido.resultado.toLowerCase() !== 'pendiente') {
-        const [golesLocal, golesVisitante] = partido.resultado.split('-').map(Number);
+        const partes = partido.resultado.split('-');
+        const golesLocal = parseInt(partes[0]) || 0;
+        const golesVisitante = parseInt(partes[1]) || 0;
         
         this.partidosJugados++;
         this.golesFavor += esLocal ? golesLocal : golesVisitante;
@@ -136,7 +138,7 @@ Torneo.prototype.calcularEstadisticas = function() {
         });
     });
 
-    //Para equipos que no jugaron ningun partido --> "No participó"
+    //Para equipos que no jugaron ningún partido --> "No participó"
     this.equipos.forEach(equipo => {
         if (equipo.partidosJugados === 0) {
             equipo.faseAlcanzada = "No participó";

@@ -237,11 +237,12 @@ class AnalizadorLexico {
             case '}': tipoDeToken = TipoToken.LLAVE_DER; break;
             case '[': tipoDeToken = TipoToken.CORCHETE_IZQ; break;
             case ']': tipoDeToken = TipoToken.CORCHETE_DER; break;
-            case '(': tipoDeToken = TipoToken.PARENTESIS_IZQ; break;
-            case ')': tipoDeToken = TipoToken.PARENTESIS_DER; break;
             case ':': tipoDeToken = TipoToken.DOS_PUNTOS; break;
             case ',': tipoDeToken = TipoToken.COMA; break;
-            default: return null;
+            case '(': 
+            case ')': 
+            default: 
+                return null;
         }
 
         return new Token(tipoDeToken, caracter, lineaInicial, columnaInicial);
@@ -469,12 +470,20 @@ function mostrarErrores(errores) {
 
 function escaparHtml(texto) {
     if (typeof texto !== 'string') return texto;
-    return texto
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
+    
+    let resultado = '';
+    for (let i = 0; i < texto.length; i++) {
+        const caracter = texto[i];
+        switch (caracter) {
+            case '&': resultado += '&amp;'; break;
+            case '<': resultado += '&lt;'; break;
+            case '>': resultado += '&gt;'; break;
+            case '"': resultado += '&quot;'; break;
+            case "'": resultado += '&#039;'; break;
+            default: resultado += caracter;
+        }
+    }
+    return resultado;
 }
 
 //GENERACION DE REPORTES
@@ -497,7 +506,7 @@ function generarReportes() {
             <strong>Nota:</strong> Algunos datos pueden estar incompletos debido a errores en el archivo
         </div>
         ${reportes.general || '<p>No hay reporte general</p>'}
-        ${reportes.estadisticas || '<p>No hay reporte de estadísticas</p>'}
+        ${reportes.estadisticas || '<p>No hay reporte de estadisticas</p>'}
         ${reportes.goleadores || '<p>No hay reporte de goleadores</p>'}
         ${reportes.bracket || '<p>No hay reporte de bracket</p>'}
     `;
@@ -513,28 +522,6 @@ function generarReportes() {
     mostrarNotificacion('✅ Reportes generados con exito');
 }
 
-//FUNCION PARA MOSTRAR BRACKET GRAPHVIZ
-function mostrarBracket() {
-    if (!torneoActual) {
-        mostrarNotificacion('❌ No hay datos de torneo para generar el bracket');
-        return;
-    }
-    
-    const generador = new GeneradorReportes(torneoActual);
-    const graphvizCode = generador.generarGraphviz();
-    
-    const bracketContainer = document.getElementById('bracket-container');
-    bracketContainer.innerHTML = graphvizCode;
-    bracketContainer.style.display = 'block';
-    
-    //Scroll al bracket
-    bracketContainer.scrollIntoView({ behavior: 'smooth' });
-    
-    mostrarNotificacion('📊 Bracket Graphviz generado con exito');
-}
-
-
-//NOTIFICACIONES EMERGENTES
 function mostrarNotificacion(mensaje) {
     //Elemento de notificacion
     const notificacion = document.createElement('div');
@@ -604,4 +591,24 @@ function limpiarTodo() {
     torneoActual = null;
     
     mostrarNotificacion('🗑️ Datos limpiados correctamente');
+}
+
+//FUNCION PARA MOSTRAR BRACKET GRAPHVIZ
+function mostrarBracket() {
+    if (!torneoActual) {
+        mostrarNotificacion('❌ No hay datos de torneo para generar el bracket');
+        return;
+    }
+    
+    const generador = new GeneradorReportes(torneoActual);
+    const graphvizCode = generador.generarGraphviz();
+    
+    const bracketContainer = document.getElementById('bracket-container');
+    bracketContainer.innerHTML = graphvizCode;
+    bracketContainer.style.display = 'block';
+    
+    //Scroll al bracket
+    bracketContainer.scrollIntoView({ behavior: 'smooth' });
+    
+    mostrarNotificacion('📊 Bracket Graphviz generado');
 }

@@ -43,12 +43,12 @@ class GeneradorReportes {
             <table>
                 <tr>
                     <th>Equipo</th>
-                    <th>PJ</th>
-                    <th>G</th>
-                    <th>P</th>
-                    <th>GF</th>
-                    <th>GC</th>
-                    <th>DG</th>
+                    <th>Jugados</th>
+                    <th>Ganados</th>
+                    <th>Perdidos</th>
+                    <th>G. Favor</th>
+                    <th>G. Contra</th>
+                    <th>Diferencia</th>
                     <th>Fase Alcanzada</th>
                 </tr>
         `;
@@ -74,7 +74,7 @@ class GeneradorReportes {
 
     //REPORTE DE GOLEADORES
     generarReporteGoleadores() {
-        // Obtener todos los jugadores con goles
+        //Obtener todos los jugadores con goles
         const jugadoresConGoles = [];
         
         this.torneo.equipos.forEach(equipo => {
@@ -90,7 +90,7 @@ class GeneradorReportes {
             });
         });
 
-        // Ordenar por goles (descendente)
+        //Ordenar por goles (descendente)
         jugadoresConGoles.sort((a, b) => b.goles - a.goles);
 
         if (jugadoresConGoles.length === 0) {
@@ -115,15 +115,21 @@ class GeneradorReportes {
         let posicionReal = 1;
 
         jugadoresConGoles.forEach((goleador, index) => {
-            // Manejar empates en posición
+            //Manejar empates en posicion
             if (index > 0 && goleador.goles === jugadoresConGoles[index - 1].goles) {
                 posicionReal = posicion;
+                
             } else {
                 posicionReal = index + 1;
                 posicion = index + 1;
             }
 
-            const minutosFormateados = goleador.minutos.map(m => `${m}'`).join(', ');
+            //Formatear minutos
+            const minutosFormateados = [];
+            for (let i = 0; i < goleador.minutos.length; i++) {
+                minutosFormateados.push(goleador.minutos[i] + "'");
+            }
+            const minutosStr = minutosFormateados.join(', ');
 
             html += `
                 <tr>
@@ -131,7 +137,7 @@ class GeneradorReportes {
                     <td>${goleador.jugador}</td>
                     <td>${goleador.equipo}</td>
                     <td>${goleador.goles}</td>
-                    <td>${minutosFormateados}</td>
+                    <td>${minutosStr}</td>
                 </tr>
             `;
 
@@ -148,11 +154,23 @@ class GeneradorReportes {
             return '<div class="reporte"><h3>Bracket de Eliminación</h3><p>No hay datos de fases</p></div>';
         }
 
-        //Fases posibles en orden
-        const todasLasFases = [
-            'octavos', 'cuartos', 'semifinal', 'final'
-        ];
+        //Orden de las fases
+        const ordenFases = ['octavos', 'cuartos', 'semifinal', 'final'];
     
+        //Encontrar la fase mas temprana definida
+        let primeraFaseIndex = ordenFases.length;
+        this.torneo.fases.forEach(fase => {
+            const index = ordenFases.indexOf(fase.nombre.toLowerCase());
+            if (index !== -1 && index < primeraFaseIndex) {
+                primeraFaseIndex = index;
+            }
+        });
+
+        //Si no se encontró ninguna fase valida
+        if (primeraFaseIndex === ordenFases.length) {
+            return '<div class="reporte"><h3>Bracket de Eliminación</h3><p>No hay fases validas definidas</p></div>';
+        }
+
         let html = `
         <div class="reporte">
             <h3>Bracket de Eliminación</h3>
@@ -165,8 +183,9 @@ class GeneradorReportes {
                 </tr>
         `;
 
-        //Procesar cada fase en orden
-        todasLasFases.forEach(nombreFase => {
+        //Procesar solo las fases desde la primera definida en adelante
+        for (let i = primeraFaseIndex; i < ordenFases.length; i++) {
+            const nombreFase = ordenFases[i];
             const faseExistente = this.torneo.fases.find(f => 
                 f.nombre.toLowerCase() === nombreFase.toLowerCase()
             );
@@ -184,7 +203,7 @@ class GeneradorReportes {
                     `;
                 });
             } else {
-                //Mostrar fase como pendiente
+                //Mostrar fase como pendiente (si es posterior a la primera fase definida)
                 html += `
                 <tr>
                     <td>${this.formatearNombreFase(nombreFase)}</td>
@@ -194,7 +213,7 @@ class GeneradorReportes {
                 </tr>
                 `;
             }
-        });
+        }
 
         html += `</table></div>`;
         return html;
@@ -204,32 +223,41 @@ class GeneradorReportes {
     
     calcularTotalJugadores() {
         if (!this.torneo.equipos) return 0;
-        return this.torneo.equipos.reduce((total, equipo) => {
-            return total + (equipo.jugadores ? equipo.jugadores.length : 0);
-        }, 0);
+        let total = 0;
+        for (let i = 0; i < this.torneo.equipos.length; i++) {
+            total += this.torneo.equipos[i].jugadores ? this.torneo.equipos[i].jugadores.length : 0;
+        }
+        return total;
     }
 
     calcularEdadPromedio() {
         if (!this.torneo.equipos) return '0.00';
-    
-        const todosJugadores = this.torneo.equipos.flatMap(equipo => 
-            equipo.jugadores ? equipo.jugadores : []
-        );
-    
+
+        const todosJugadores = [];
+        this.torneo.equipos.forEach(equipo => {
+            if (equipo.jugadores) {
+                equipo.jugadores.forEach(jugador => {
+                    todosJugadores.push(jugador);
+                });
+            }
+        });
+
         if (todosJugadores.length === 0) return '0.00';
-    
+
         const totalEdad = todosJugadores.reduce((sum, jugador) => {
             return sum + (jugador.edad || 0);
         }, 0);
-    
+
         return (totalEdad / todosJugadores.length).toFixed(2);
     }
 
     calcularTotalPartidos() {
         if (!this.torneo.fases) return 0;
-        return this.torneo.fases.reduce((total, fase) => {
-            return total + (fase.partidos ? fase.partidos.length : 0);
-        }, 0);
+        let total = 0;
+        for (let i = 0; i < this.torneo.fases.length; i++) {
+            total += this.torneo.fases[i].partidos ? this.torneo.fases[i].partidos.length : 0;
+        }
+        return total;
     }
 
     calcularPartidosCompletados() {
@@ -254,8 +282,12 @@ class GeneradorReportes {
         this.torneo.fases.forEach(fase => {
             fase.partidos.forEach(partido => {
                 if (partido.resultado && partido.resultado.toLowerCase() !== 'pendiente') {
-                    const [golesLocal, golesVisitante] = partido.resultado.split('-').map(Number);
-                    totalGoles += (golesLocal + golesVisitante);
+                    const partes = partido.resultado.split('-');
+                    if (partes.length === 2) {
+                        const golesLocal = parseInt(partes[0]) || 0;
+                        const golesVisitante = parseInt(partes[1]) || 0;
+                        totalGoles += (golesLocal + golesVisitante);
+                    }
                 }
             });
         });
@@ -271,9 +303,15 @@ class GeneradorReportes {
         //Buscar la ultima fase con partidos no completados
         for (let i = this.torneo.fases.length - 1; i >= 0; i--) {
             const fase = this.torneo.fases[i];
-            const partidosPendientes = fase.partidos.some(partido => 
-                !partido.resultado || partido.resultado.toLowerCase() === 'pendiente'
-            );
+            let partidosPendientes = false;
+            
+            for (let j = 0; j < fase.partidos.length; j++) {
+                const partido = fase.partidos[j];
+                if (!partido.resultado || partido.resultado.toLowerCase() === 'pendiente') {
+                    partidosPendientes = true;
+                    break;
+                }
+            }
             
             if (partidosPendientes) {
                 return this.formatearNombreFase(fase.nombre);
@@ -285,14 +323,17 @@ class GeneradorReportes {
     }
 
     formatearNombreFase(nombre) {
-        const nombres = {
-            'octavos': 'Octavos de Final',
-            'cuartos': 'Cuartos de Final',
-            'semifinal': 'Semifinal',
-            'final': 'Final'
-        };
+        const nombreLower = nombre.toLowerCase();
     
-        return nombres[nombre.toLowerCase()] || nombre;
+        if (nombreLower === 'octavos') return 'Octavos de Final';
+        if (nombreLower === 'cuartos') return 'Cuartos de Final';
+        if (nombreLower === 'semifinal') return 'Semifinal';
+        if (nombreLower === 'final') return 'Final';
+    
+        if (nombreLower === 'octavos de final') return 'Octavos de Final';
+        if (nombreLower === 'cuartos de final') return 'Cuartos de Final';
+    
+        return nombre.charAt(0).toUpperCase() + nombre.slice(1); //Capitalizar primera letra
     }
 
     //GENERAR TODOS LOS REPORTES
@@ -313,69 +354,189 @@ class GeneradorReportes {
 
         let dot = `digraph Torneo {
             rankdir=TB
-            node [shape=rect, style=filled, fillcolor=lightblue, fontname="Arial"]
-            edge [arrowhead=none]
-            graph [bgcolor=transparent]
+            graph [bgcolor=transparent, fontname="Arial"]
+            node [fontname="Arial"]
+            edge [fontname="Arial"]
         
-            label="Bracket de Torneo: ${this.torneo.nombre || 'Sin nombre'}"
-            labelloc=t
-            fontsize=20
+            //ESTILOS
+            node [shape=rect, style=filled, fillcolor=lightblue, width=2.0, height=0.9]
+            node [fontsize=12]
+            edge [arrowsize=0.8]
+        
+            //TITULO EN OVALO
+            titulo [label="${this.torneo.nombre || 'Torneo'}", shape=oval, style=filled, fillcolor=gold, fontsize=16, width=2.5, height=0.8]
         \n`;
 
         //Organizar fases por orden logico
+        const ordenFases = ['octavos', 'cuartos', 'semifinal', 'final'];
         const fasesOrdenadas = this.ordenarFases(this.torneo.fases);
     
-        //Generar nodos y conexiones
-        let partidoId = 1;
-        let equiposPrevios = new Set();
-
+        //Diccionario para rastrear equipos y sus posiciones
+        const equiposPorFase = {};
+        const partidosInfoPorFase = {};
+    
+        //Generar cuadros para cada fase (clusters)
         fasesOrdenadas.forEach((fase, faseIndex) => {
+            const faseNombreFormateado = this.formatearNombreFase(fase.nombre);
+        
             dot += `\n    subgraph cluster_${faseIndex} {
-                label="${fase.nombre}"
-                style=filled
-                fillcolor=lightgray
-                fontsize=16
-            \n`;
-
+            label="${faseNombreFormateado}"
+            style=filled
+            fillcolor=lightgray
+            color=black
+            fontsize=14
+            penwidth=2
+            margin=20
+        \n`;
+        
+            equiposPorFase[fase.nombre] = [];
+            partidosInfoPorFase[fase.nombre] = [];
+        
             fase.partidos.forEach((partido, partidoIndex) => {
                 const nodoId = `partido_${faseIndex}_${partidoIndex}`;
+                const equipoLocal = partido.equipoLocal;
+                const equipoVisitante = partido.equipoVisitante;
             
-                //Crear nodo del partido
-                dot += `    ${nodoId} [label="${partido.equipoLocal} vs ${partido.equipoVisitante}\\n${partido.resultado || 'Pendiente'}", width=3, height=1.5];\n`;
-
-                //Conectar con partidos anteriores (si es fase eliminatoria)
-                if (faseIndex > 0 && partidoIndex < fase.partidos.length) {
-                    const partidosAnteriores = fasesOrdenadas[faseIndex - 1].partidos;
-                    if (partidoIndex * 2 < partidosAnteriores.length) {
-                        const nodoAnterior1 = `partido_${faseIndex - 1}_${partidoIndex * 2}`;
-                        const nodoAnterior2 = `partido_${faseIndex - 1}_${partidoIndex * 2 + 1}`;
-                        dot += `    ${nodoAnterior1} -> ${nodoId} [style=dashed, color=gray];\n`;
-                        dot += `    ${nodoAnterior2} -> ${nodoId} [style=dashed, color=gray];\n`;
+                //Determinar resultado y colores
+                let golesLocal = '0';
+                let golesVisitante = '0';
+                let colorLocal = 'lightblue';
+                let colorVisitante = 'lightblue';
+                let ganador = null;
+            
+                if (partido.resultado && partido.resultado.toLowerCase() !== 'pendiente') {
+                    [golesLocal, golesVisitante] = partido.resultado.split('-').map(g => g.trim());
+                
+                    const golesLocalNum = parseInt(golesLocal);
+                    const golesVisitanteNum = parseInt(golesVisitante);
+                
+                    if (golesLocalNum > golesVisitanteNum) {
+                        colorLocal = 'lightgreen';
+                        colorVisitante = 'lightcoral';
+                        ganador = equipoLocal;
+                    } else if (golesVisitanteNum > golesLocalNum) {
+                        colorLocal = 'lightcoral';
+                        colorVisitante = 'lightgreen';
+                        ganador = equipoVisitante;
+                    }
+                } else {
+                    //Para partidos pendientes
+                    golesLocal = '-';
+                    golesVisitante = '-';
+                }
+            
+                //Nodos para los equipos con goles
+                const nodoLocal = `${nodoId}_local`;
+                const nodoVisitante = `${nodoId}_visitante`;
+            
+                dot += `        ${nodoLocal} [label="${this.acortarTexto(equipoLocal, 15)}\\\: ${golesLocal}", fillcolor="${colorLocal}"];\n`;
+                dot += `        ${nodoVisitante} [label="${this.acortarTexto(equipoVisitante, 15)}\\\:${golesVisitante}", fillcolor="${colorVisitante}"];\n`;
+            
+                //Agrupar equipos en la misma fase
+                equiposPorFase[fase.nombre].push(nodoLocal, nodoVisitante);
+            
+                //Guardar informacion completa del partido
+                partidosInfoPorFase[fase.nombre] = partidosInfoPorFase[fase.nombre] || [];
+                partidosInfoPorFase[fase.nombre].push({
+                    nodoLocal: nodoLocal,
+                    nodoVisitante: nodoVisitante,
+                    equipoLocal: equipoLocal,
+                    equipoVisitante: equipoVisitante,
+                    golesLocal: golesLocal,
+                    golesVisitante: golesVisitante,
+                    ganador: ganador,
+                    partidoIndex: partidoIndex,
+                    faseNombre: fase.nombre
+                });
+            
+                //Conectar equipos del mismo partido con linea punteada
+                dot += `        ${nodoLocal} -> ${nodoVisitante} [style=invis];\n`;
+            });
+        
+            //Agrupar equipos de la misma fase horizontalmente
+            if (equiposPorFase[fase.nombre].length > 0) {
+                dot += `        {rank=same; ${equiposPorFase[fase.nombre].join('; ')}}\n`;
+            }
+        
+            dot += `    }\n`; //Cerrar cluster de la fase
+        });
+    
+        //CONEXIONES ENTRE FASES - PARA CUALQUIER CANTIDAD DE EQUIPOS
+        for (let i = 0; i < fasesOrdenadas.length - 1; i++) {
+            const faseActualObj = fasesOrdenadas[i];
+            const faseSiguienteObj = fasesOrdenadas[i + 1];
+        
+            const partidosActuales = partidosInfoPorFase[faseActualObj.nombre];
+            const partidosSiguientes = partidosInfoPorFase[faseSiguienteObj.nombre];
+        
+            //Solo generar flechas si ambas fases existen
+            if (partidosActuales && partidosSiguientes) {
+            
+                //Para cada partido de la fase siguiente
+                for (let j = 0; j < partidosSiguientes.length; j++) {
+                    const partidoSiguiente = partidosSiguientes[j];
+                
+                    //Calcular que partidos de la fase actual alimentan este partido
+                    const partidosPorPartidoSiguiente = Math.ceil(partidosActuales.length / partidosSiguientes.length);
+                    const inicio = j * partidosPorPartidoSiguiente;
+                    const fin = Math.min(inicio + partidosPorPartidoSiguiente, partidosActuales.length);
+                
+                    //Para cada partido de la fase actual que alimenta este partido de la fase siguiente
+                    for (let k = inicio; k < fin; k++) {
+                        if (k < partidosActuales.length) {
+                            const partidoActual = partidosActuales[k];
+                        
+                            //Determinar a que equipo del partido siguiente apunta este partido
+                            const equipoDestino = (k - inicio) % 2 === 0 ? partidoSiguiente.nodoLocal : partidoSiguiente.nodoVisitante;
+                        
+                            //FLECHA NEGRA (ganador → equipo destino)
+                            if (partidoActual.ganador === partidoActual.equipoLocal) {
+                                dot += `    ${partidoActual.nodoLocal} -> ${equipoDestino} [color="black", penwidth=2, label="✅"];\n`;
+                            } else if (partidoActual.ganador === partidoActual.equipoVisitante) {
+                                dot += `    ${partidoActual.nodoVisitante} -> ${equipoDestino} [color="black", penwidth=2, label="✅"];\n`;
+                            }
+                        
+                            //FLECHA ROJA (perdedor → equipo destino)
+                            if (partidoActual.ganador) {
+                                const perdedor = partidoActual.ganador === partidoActual.equipoLocal ? 
+                                            partidoActual.nodoVisitante : partidoActual.nodoLocal;
+                                dot += `    ${perdedor} -> ${equipoDestino} [color="red", penwidth=2, style=dashed, label="❌"];\n`;
+                            }
+                        }
                     }
                 }
-
-                //Resaltar ganador
-                if (partido.ganador && partido.ganador !== "Por definirse" && partido.ganador !== "Empate") {
-                    dot += `    ${nodoId} [fillcolor=lightgreen];\n`;
-                }
-
-                partidoId++;
-            });
-
-            dot += "    }\n";
-        });
+            }
+        }
+    
+        //Conectar titulo con la primera fase existente
+        const primeraFaseExistente = fasesOrdenadas[0];
+        if (primeraFaseExistente && equiposPorFase[primeraFaseExistente.nombre]) {
+            const primeraFaseEquipos = equiposPorFase[primeraFaseExistente.nombre];
+            dot += `    titulo -> {${primeraFaseEquipos.join(' ')}} [style=invis];\n`;
+        }
 
         dot += "}";
     
         return this.mostrarGraphviz(dot);
     }
 
+    //FUNCION PARA ACORTAR TEXTO MUY LARGO
+    acortarTexto(texto, maxLength) {
+        if (texto.length <= maxLength) return texto;
+        return texto.substring(0, maxLength - 3) + '...';
+    }
+
     //PARA ORDENAR FASES
     ordenarFases(fases) {
-        const ordenFases = ['cuartos', 'semifinal', 'final', 'tercer lugar'];
+        const ordenFases = ['octavos', 'cuartos', 'semifinal', 'final'];
         return fases.sort((a, b) => {
-            const indexA = ordenFases.indexOf(a.nombre.toLowerCase());
-            const indexB = ordenFases.indexOf(b.nombre.toLowerCase());
+            let indexA = ordenFases.indexOf(a.nombre.toLowerCase());
+            let indexB = ordenFases.indexOf(b.nombre.toLowerCase());
+        
+            //Si no se encuentra en la lista --> al final
+            if (indexA === -1) indexA = ordenFases.length;
+            if (indexB === -1) indexB = ordenFases.length;
+        
             return indexA - indexB;
         });
     }
