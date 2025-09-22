@@ -98,14 +98,14 @@ Torneo.prototype.calcularEstadisticas = function() {
         });
     });
 
-    //Procesar partidos
+    //Procesar partidos (solo los que tienen resultado)
     this.fases.forEach(fase => {
         fase.partidos.forEach(partido => {
             //Encontrar equipos
             const equipoLocal = this.equipos.find(e => e.nombre === partido.equipoLocal);
             const equipoVisitante = this.equipos.find(e => e.nombre === partido.equipoVisitante);
 
-            if (equipoLocal && equipoVisitante) {
+            if (equipoLocal && equipoVisitante && partido.resultado && partido.resultado.toLowerCase() !== 'pendiente') {
                 //Actualizar estadisticas de equipos
                 equipoLocal.actualizarEstadisticas(partido, true);
                 equipoVisitante.actualizarEstadisticas(partido, false);
@@ -134,5 +134,12 @@ Torneo.prototype.calcularEstadisticas = function() {
                 });
             }
         });
+    });
+
+    //Para equipos que no jugaron ningun partido --> "No participó"
+    this.equipos.forEach(equipo => {
+        if (equipo.partidosJugados === 0) {
+            equipo.faseAlcanzada = "No participó";
+        }
     });
 };

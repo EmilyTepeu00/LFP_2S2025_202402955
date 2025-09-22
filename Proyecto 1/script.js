@@ -497,17 +497,44 @@ function generarReportes() {
             <strong>Nota:</strong> Algunos datos pueden estar incompletos debido a errores en el archivo
         </div>
         ${reportes.general || '<p>No hay reporte general</p>'}
-        ${reportes.estadisticas || '<p>No hay reporte de estadisticas</p>'}
+        ${reportes.estadisticas || '<p>No hay reporte de estadísticas</p>'}
         ${reportes.goleadores || '<p>No hay reporte de goleadores</p>'}
         ${reportes.bracket || '<p>No hay reporte de bracket</p>'}
-        ${reportes.graphviz || '<p>No hay diagrama Graphviz</p>'}
     `;
     
     reportesContainer.style.display = 'block';
+    
+    //Mostrar boton para bracket Graphviz
+    document.getElementById('btnMostrarBracket').style.display = 'inline-block';
+    
+    //Ocultar contenedor de bracket Graphviz inicialmente
+    document.getElementById('bracket-container').style.display = 'none';
 
     mostrarNotificacion('✅ Reportes generados con exito');
 }
 
+//FUNCION PARA MOSTRAR BRACKET GRAPHVIZ
+function mostrarBracket() {
+    if (!torneoActual) {
+        mostrarNotificacion('❌ No hay datos de torneo para generar el bracket');
+        return;
+    }
+    
+    const generador = new GeneradorReportes(torneoActual);
+    const graphvizCode = generador.generarGraphviz();
+    
+    const bracketContainer = document.getElementById('bracket-container');
+    bracketContainer.innerHTML = graphvizCode;
+    bracketContainer.style.display = 'block';
+    
+    //Scroll al bracket
+    bracketContainer.scrollIntoView({ behavior: 'smooth' });
+    
+    mostrarNotificacion('📊 Bracket Graphviz generado con exito');
+}
+
+
+//NOTIFICACIONES EMERGENTES
 function mostrarNotificacion(mensaje) {
     //Elemento de notificacion
     const notificacion = document.createElement('div');
@@ -552,4 +579,29 @@ function mostrarNotificacion(mensaje) {
             }
         }, 300);
     }, 3000);
+}
+
+//FUNCION PARA LIMPIAR TODO
+function limpiarTodo() {
+    //Limpiar campos de entrada
+    document.getElementById('fileInput').value = '';
+    document.getElementById('codeInput').value = '';
+    
+    //Limpiar resultados
+    document.querySelector('#tokens-table tbody').innerHTML = '';
+    document.querySelector('#errors-table tbody').innerHTML = '';
+    document.getElementById('reportes-container').innerHTML = '';
+    document.getElementById('bracket-container').innerHTML = '';
+    document.getElementById('bracket-container').style.display = 'none';
+    
+    //Ocultar secciones
+    document.getElementById('results-section').style.display = 'none';
+    document.getElementById('btnGenerarReportes').style.display = 'none';
+    document.getElementById('btnMostrarBracket').style.display = 'none';
+    
+    //Resetear variables
+    resultadosAnalisisActual = null;
+    torneoActual = null;
+    
+    mostrarNotificacion('🗑️ Datos limpiados correctamente');
 }

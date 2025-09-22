@@ -148,6 +148,11 @@ class GeneradorReportes {
             return '<div class="reporte"><h3>Bracket de Eliminación</h3><p>No hay datos de fases</p></div>';
         }
 
+        //Fases posibles en orden
+        const todasLasFases = [
+            'octavos', 'cuartos', 'semifinal', 'final'
+        ];
+    
         let html = `
         <div class="reporte">
             <h3>Bracket de Eliminación</h3>
@@ -160,17 +165,35 @@ class GeneradorReportes {
                 </tr>
         `;
 
-        this.torneo.fases.forEach(fase => {
-            fase.partidos.forEach(partido => {
+        //Procesar cada fase en orden
+        todasLasFases.forEach(nombreFase => {
+            const faseExistente = this.torneo.fases.find(f => 
+                f.nombre.toLowerCase() === nombreFase.toLowerCase()
+            );
+
+            if (faseExistente) {
+                //Mostrar partidos de la fase existente
+                faseExistente.partidos.forEach(partido => {
+                    html += `
+                    <tr>
+                        <td>${this.formatearNombreFase(faseExistente.nombre)}</td>
+                        <td>${partido.equipoLocal} vs ${partido.equipoVisitante}</td>
+                        <td>${partido.resultado || 'Pendiente'}</td>
+                        <td>${partido.ganador || 'Por definirse'}</td>
+                    </tr>
+                    `;
+                });
+            } else {
+                //Mostrar fase como pendiente
                 html += `
                 <tr>
-                    <td>${this.formatearNombreFase(fase.nombre)}</td>
-                    <td>${partido.equipoLocal} vs ${partido.equipoVisitante}</td>
-                    <td>${partido.resultado || 'Pendiente'}</td>
-                    <td>${partido.ganador || 'Por definirse'}</td>
+                    <td>${this.formatearNombreFase(nombreFase)}</td>
+                    <td>Pendiente vs Pendiente</td>
+                    <td>Pendiente</td>
+                    <td>Por definirse</td>
                 </tr>
                 `;
-            });
+            }
         });
 
         html += `</table></div>`;
@@ -263,12 +286,12 @@ class GeneradorReportes {
 
     formatearNombreFase(nombre) {
         const nombres = {
+            'octavos': 'Octavos de Final',
             'cuartos': 'Cuartos de Final',
             'semifinal': 'Semifinal',
-            'final': 'Final',
-            'tercer': 'Tercer Lugar'
+            'final': 'Final'
         };
-        
+    
         return nombres[nombre.toLowerCase()] || nombre;
     }
 
@@ -278,8 +301,7 @@ class GeneradorReportes {
             general: this.generarReporteGeneral(),
             estadisticas: this.generarReporteEstadisticasEquipos(),
             goleadores: this.generarReporteGoleadores(),
-            bracket: this.generarReporteBracket(),
-            graphviz: this.generarGraphviz()
+            bracket: this.generarReporteBracket()
         };
     }
 
