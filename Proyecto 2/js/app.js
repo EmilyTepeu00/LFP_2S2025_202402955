@@ -4,6 +4,9 @@ class JavaBridgeApp {
     }
 
     inicializarApp() {
+        this.lexer = new Lexer();
+        this.parser = new Parser();
+        this.tradcutor = new Traductor();
         this.configurarEventos();
     }
 
@@ -17,9 +20,20 @@ class JavaBridgeApp {
     }
 
     traducirCodigo() {
+        const codigoJava = document.getElementById('codigoJava').value;
         const areaTextoPython = document.getElementById('codigoPython');
-        if (areaTextoPython) {
-            areaTextoPython.value = "# ...";
+
+        try {
+            //FLUJO COMPLETO: Lexico -> Sintactico -> Traduccion
+            const tokens = this.lexer.tokenizar(codigoJava);
+            const ast = this.parser.parsear(tokens);
+            const codigoPython = this.translator.traducir(ast);
+            
+            areaTextoPython.value = codigoPython;
+
+        } catch (error) {
+            console.error('Error en traducción:', error);
+            areaTextoPython.value = `# Error en traducción\n# ${error.message}`;
         }
     }
 }
