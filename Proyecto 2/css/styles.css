@@ -1,3 +1,4 @@
+/* ESTILOS PARA JavaBridge */
 * {
     margin: 0;
     padding: 0;
@@ -76,6 +77,32 @@ textarea:focus {
     background-color: #f0f8f0;
 }
 
+/* MENU DE ARCHIVO */
+.menu-archivo {
+    grid-column: 1 / -1;
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-bottom: 15px;
+    flex-wrap: wrap;
+}
+
+.menu-archivo button {
+    padding: 8px 16px;
+    background: #27ae60;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.3s ease;
+}
+
+.menu-archivo button:hover {
+    background: #219653;
+    transform: translateY(-1px);
+}
+
 .controls {
     grid-column: 1 / -1;
     display: flex;
@@ -113,7 +140,7 @@ button:disabled {
     box-shadow: none;
 }
 
-/* Responsive */
+/* RESPONSIVE */
 @media (max-width: 768px) {
     .container {
         grid-template-columns: 1fr;
@@ -126,5 +153,14 @@ button:disabled {
     
     textarea {
         height: 300px;
+    }
+    
+    .menu-archivo {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .menu-archivo button {
+        width: 200px;
     }
 }
