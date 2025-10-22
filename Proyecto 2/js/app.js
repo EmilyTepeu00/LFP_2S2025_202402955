@@ -93,7 +93,7 @@ class AppJavaBridge {
     guardarArchivoPython() {
         const codigoPython = document.getElementById('codigoPython').value;
         if (!codigoPython.trim()) {
-            alert('No hay código Python para guardar');
+            alert('No hay codigo Python para guardar');
             return;
         }
         this.guardarArchivo(codigoPython, 'python', 'programa_traducido.py');
@@ -118,14 +118,24 @@ class AppJavaBridge {
     verTokens() {
         const codigoJava = document.getElementById('codigoJava').value;
         const tokens = this.lexer.tokenizar(codigoJava);
+        const errores = this.lexer.obtenerErrores();
         
         console.log('=== TOKENS ENCONTRADOS ===');
         tokens.forEach((token, index) => {
             console.log(`${index + 1}. '${token.lexema}' - ${token.tipo} (Linea: ${token.linea}, Col: ${token.columna})`);
         });
         
-        if (tokens.length === 0) {
-            console.log('No se encontraron tokens');
+        console.log('=== ERRORES LEXICOS ===');
+        if (errores.length === 0) {
+            console.log('No se encontraron errores lexicos');
+        } else {
+            errores.forEach((error, index) => {
+                console.log(`${index + 1}. ${error.mensaje} (Linea: ${error.linea}, Col: ${error.columna})`);
+            });
+        }
+        
+        if (tokens.length === 0 && errores.length === 0) {
+            console.log('No se encontraron tokens ni errores');
         }
     }
 

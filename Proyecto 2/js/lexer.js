@@ -8,7 +8,7 @@ class Lexer {
 
         this.simbolos = ['{', '}', '(', ')', '[', ']', ';', ',', '=', '+', '-', '*', '/', 
                         '==', '!=', '>', '<', '>=', '<=', '++', '--'];
-    
+        
         this.tokens = [];
         this.errores = [];
         this.lineaActual = 1;
@@ -33,6 +33,9 @@ class Lexer {
 
             } else if (this.esLetra(caracterActual) || caracterActual === '_') {
                 this.procesarIdentificador();
+
+            } else if (this.esDigito(caracterActual) || caracterActual === '-') {
+                this.procesarNumero();
 
             } else {
                 this.posicion++;
@@ -89,6 +92,70 @@ class Lexer {
             tipo = 'PALABRA_RESERVADA';
         }
 
+        this.agregarToken(lexema, tipo, inicioLinea, inicioColumna);
+    }
+
+    procesarNumero() {
+        const inicioLinea = this.lineaActual;
+        const inicioColumna = this.columnaActual;
+        let lexema = '';
+        let tienePunto = false;
+        let esNegativo = false;
+
+        //AFD PARA NUMEROS
+        
+        //Manejar signo negativo
+        if (this.codigo[this.posicion] === '-') {
+            lexema += '-';
+            this.posicion++;
+            this.columnaActual++;
+            esNegativo = true;
+        }
+
+        //Procesar parte entera
+        while (this.posicion < this.codigo.length && this.esDigito(this.codigo[this.posicion])) {
+            lexema += this.codigo[this.posicion];
+            this.posicion++;
+            this.columnaActual++;
+        }
+
+        //Verificar si es decimal
+        if (this.posicion < this.codigo.length && this.codigo[this.posicion] === '.') {
+            lexema += '.';
+            this.posicion++;
+            this.columnaActual++;
+            tienePunto = true;
+
+            //Procesar parte decimal
+            let tieneDigitosDecimales = false;
+            while (this.posicion < this.codigo.length && this.esDigito(this.codigo[this.posicion])) {
+                lexema += this.codigo[this.posicion];
+                this.posicion++;
+                this.columnaActual++;
+                tieneDigitosDecimales = true;
+            }
+
+            //Validar decimal mal formado
+            if (!tieneDigitosDecimales) {
+                this.agregarError('Numero decimal invalido: falta parte decimal', inicioLinea, inicioColumna);
+                return;
+            }
+
+            // Verificar si hay otro punto / numero mal formado
+            if (this.posicion < this.codigo.length && this.codigo[this.posicion] === '.') {
+                this.agregarError('Numero decimal invalido: multiples puntos decimales', inicioLinea, inicioColumna);
+                return;
+            }
+        }
+
+        //Validar casos especiales
+        if (lexema === '-' || lexema === '.') {
+            this.agregarError('Numero mal formado', inicioLinea, inicioColumna);
+            return;
+        }
+
+        //Determinar tipo de numero
+        const tipo = tienePunto ? 'DECIMAL' : 'ENTERO';
         this.agregarToken(lexema, tipo, inicioLinea, inicioColumna);
     }
 
