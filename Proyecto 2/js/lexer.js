@@ -5,7 +5,7 @@ class Lexer {
             'int', 'double', 'char', 'boolean', 'true', 'false', 'if', 'else',
             'for', 'while', 'System', 'out', 'println'
         ];
-
+        
         this.simbolos = ['{', '}', '(', ')', '[', ']', ';', ',', '=', '+', '-', '*', '/', 
                         '==', '!=', '>', '<', '>=', '<=', '++', '--'];
         
@@ -31,6 +31,12 @@ class Lexer {
             if (this.esEspacio(caracterActual)) {
                 this.procesarEspacio();
 
+            } else if (caracterActual === "'") {
+                this.procesarCaracter();
+
+            } else if (caracterActual === '"') {
+                this.procesarCadena();
+
             } else if (this.esLetra(caracterActual) || caracterActual === '_') {
                 this.procesarIdentificador();
 
@@ -38,8 +44,7 @@ class Lexer {
                 this.procesarNumero();
 
             } else {
-                this.posicion++;
-                this.columnaActual++;
+                this.procesarSimbolo();
             }
         }
 
@@ -157,6 +162,116 @@ class Lexer {
         //Determinar tipo de numero
         const tipo = tienePunto ? 'DECIMAL' : 'ENTERO';
         this.agregarToken(lexema, tipo, inicioLinea, inicioColumna);
+    }
+
+    //---- AFD LITERALES DE TEXTO ----
+
+    procesarCaracter() {
+        const inicioLinea = this.lineaActual;
+        const inicioColumna = this.columnaActual;
+        let lexema = "'";
+        this.posicion++; //Saltar la comilla inicial
+        this.columnaActual++;
+
+        //AFD para caracteres: 'x' que es cualquier caracter excepto '
+        if (this.posicion >= this.codigo.length) {
+            this.agregarError('Caracter no cerrado', inicioLinea, inicioColumna);
+            return;
+        }
+
+        const caracter = this.codigo[this.posicion];
+        lexema += caracter;
+        this.posicion++;
+        this.columnaActual++;
+
+        if (this.posicion >= this.codigo.length || this.codigo[this.posicion] !== "'") {
+            this.agregarError('Caracter mal formado: falta comilla de cierre', inicioLinea, inicioColumna);
+            return;
+        }
+
+        lexema += "'";
+        this.posicion++; //Saltar la comilla final
+        this.columnaActual++;
+
+        this.agregarToken(lexema, 'CARACTER', inicioLinea, inicioColumna);
+    }
+
+    procesarCadena() {
+        const inicioLinea = this.lineaActual;
+        const inicioColumna = this.columnaActual;
+        let lexema = '"';
+        this.posicion++; //Saltar la comilla inicial
+        this.columnaActual++;
+
+        //AFD para cadenas: "texto" que puede tener cualquier caracter excepto "
+        while (this.posicion < this.codigo.length && this.codigo[this.posicion] !== '"') {
+            //Manejar saltos de linea dentro de cadenas 
+            if (this.codigo[this.posicion] === '\n') {
+                this.agregarError('Cadena no cerrada: salto de linea dentro de cadena', inicioLinea, inicioColumna);
+                return;
+            }
+            
+            lexema += this.codigo[this.posicion];
+            this.posicion++;
+            this.columnaActual++;
+        }
+
+        if (this.posicion >= this.codigo.length) {
+            this.agregarError('Cadena sin cerrar', inicioLinea, inicioColumna);
+            return;
+        }
+
+        lexema += '"';
+        this.posicion++; //Saltar la comilla final
+        this.columnaActual++;
+
+        this.agregarToken(lexema, 'CADENA', inicioLinea, inicioColumna);
+    }
+
+    //---- AFD PARA SIMBOLOS Y OPERADORES ----
+
+    procesarSimbolo() {
+        const inicioLinea = this.lineaActual;
+        const inicioColumna = this.columnaActual;
+        const caracterActual = this.codigo[this.posicion];
+        let lexema = caracterActual;
+
+        //AFD para simbolos y operadores
+        if (this.posicion + 1 < this.codigo.length) {
+            const dosCaracteres = caracterActual + this.codigo[this.posicion + 1];
+            
+            //Operadores de 2 caracteres
+            if (dosCaracteres === '==' || dosCaracteres === '!=' || 
+                dosCaracteres === '>=' || dosCaracteres === '<=' ||
+                dosCaracteres === '++' || dosCaracteres === '--') {
+                lexema = dosCaracteres;
+                this.posicion += 2;
+                this.columnaActual += 2;
+                this.agregarToken(lexema, 'OPERADOR', inicioLinea, inicioColumna);
+                return;
+            }
+        }
+
+        //Simbolos de 1 caracter
+        if (caracterActual === '{' || caracterActual === '}' ||
+            caracterActual === '(' || caracterActual === ')' ||
+            caracterActual === '[' || caracterActual === ']' ||
+            caracterActual === ';' || caracterActual === ',' ||
+            caracterActual === '=' || caracterActual === '+' ||
+            caracterActual === '-' || caracterActual === '*' ||
+            caracterActual === '/' || caracterActual === '>' ||
+            caracterActual === '<') {
+            
+            this.posicion++;
+            this.columnaActual++;
+            this.agregarToken(lexema, 'SIMBOLO', inicioLinea, inicioColumna);
+            return;
+        }
+
+        //Caracter no reconocido
+        this.agregarError(`Caracter no reconocido: '${caracterActual}'`, inicioLinea, inicioColumna);
+        this.posicion++;
+        this.columnaActual++;
     }
 
     agregarToken(lexema, tipo, linea, columna) {
