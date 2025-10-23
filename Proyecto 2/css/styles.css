@@ -255,3 +255,50 @@ code {
         width: 100%;
     }
 }
+
+/* PESTAÑAS PARA ERRORES */
+.pestañas {
+    display: flex;
+    margin-bottom: 15px;
+    border-bottom: 1px solid #ddd;
+}
+
+.pestaña {
+    padding: 10px 20px;
+    background: #f8f9fa;
+    border: 1px solid #ddd;
+    border-bottom: none;
+    border-radius: 6px 6px 0 0;
+    cursor: pointer;
+    margin-right: 5px;
+    transition: all 0.3s ease;
+}
+
+.pestaña:hover {
+    background: #e9ecef;
+}
+
+.pestaña.activa {
+    background: #3498db;
+    color: white;
+    border-color: #3498db;
+}
+
+/* ESTILOS PARA EL AST */
+#astJson {
+    background: #2c3e50;
+    color: #ecf0f1;
+    padding: 15px;
+    border-radius: 6px;
+    font-family: 'Consolas', 'Monaco', monospace;
+    font-size: 12px;
+    line-height: 1.4;
+    overflow-x: auto;
+    max-height: 500px;
+    overflow-y: auto;
+}
+
+/* TABLA DE ERRORES */
+.tabla-container table {
+    margin-bottom: 0;
+}

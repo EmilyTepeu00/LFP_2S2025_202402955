@@ -34,6 +34,7 @@ class AppJavaBridge {
             <button id="guardarPythonBtn">Guardar .py</button>
             <button id="verTokensBtn">Ver Tokens</button>
             <button id="verErroresBtn">Ver Errores</button>
+            <button id="verASTBtn">Ver AST</button>
         `;
         
         controls.parentNode.insertBefore(menuArchivo, controls);
@@ -74,9 +75,25 @@ class AppJavaBridge {
                     </div>
                 </div>
                 <div id="reporteErrores" class="reporte">
-                    <h3>Errores Lexicos: <span id="contadorErrores">0</span></h3>
+                    <h3>Errores: <span id="contadorErrores">0</span></h3>
+                    <div class="pestañas">
+                        <button class="pestaña activa" data-pestaña="lexicos">Lexicos</button>
+                        <button class="pestaña" data-pestaña="sintacticos">Sintacticos</button>
+                    </div>
                     <div class="tabla-container">
-                        <table id="tablaErrores">
+                        <table id="tablaErroresLexicos">
+                            <thead>
+                                <tr>
+                                    <th>No.</th>
+                                    <th>Error</th>
+                                    <th>Descripcion</th>
+                                    <th>Linea</th>
+                                    <th>Columna</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                        <table id="tablaErroresSintacticos" style="display: none;">
                             <thead>
                                 <tr>
                                     <th>No.</th>
@@ -89,6 +106,10 @@ class AppJavaBridge {
                             <tbody></tbody>
                         </table>
                     </div>
+                </div>
+                <div id="reporteAST" class="reporte">
+                    <h3>Arbol de Sintaxis Abstracta (AST)</h3>
+                    <pre id="astJson"></pre>
                 </div>
             </div>
         `;
@@ -121,6 +142,10 @@ class AppJavaBridge {
         document.getElementById('verErroresBtn').addEventListener('click', () => {
             this.mostrarReporteErrores();
         });
+        
+        document.getElementById('verASTBtn').addEventListener('click', () => {
+            this.mostrarReporteAST();
+        });
     }
 
     configurarEventosReportes() {
@@ -131,6 +156,32 @@ class AppJavaBridge {
         document.getElementById('descargarHTMLBtn').addEventListener('click', () => {
             this.descargarReporteHTML();
         });
+
+        //Configurar pestañas de errores
+        document.querySelectorAll('.pestaña').forEach(pestaña => {
+            pestaña.addEventListener('click', (e) => {
+                const tipo = e.target.getAttribute('data-pestaña');
+                this.cambiarPestañaErrores(tipo);
+            });
+        });
+    }
+
+    cambiarPestañaErrores(tipo) {
+        //Actualizar botones de pestañas
+        document.querySelectorAll('.pestaña').forEach(p => {
+            p.classList.remove('activa');
+        });
+        document.querySelector(`[data-pestaña="${tipo}"]`).classList.add('activa');
+
+        //Mostrar tabla correspondiente
+        if (tipo === 'lexicos') {
+            document.getElementById('tablaErroresLexicos').style.display = 'table';
+            document.getElementById('tablaErroresSintacticos').style.display = 'none';
+
+        } else {
+            document.getElementById('tablaErroresLexicos').style.display = 'none';
+            document.getElementById('tablaErroresSintacticos').style.display = 'table';
+        }
     }
 
     nuevoArchivo() {
@@ -198,11 +249,91 @@ class AppJavaBridge {
     mostrarReporteErrores() {
         const codigoJava = document.getElementById('codigoJava').value;
         this.lexer.tokenizar(codigoJava);
-        const errores = this.lexer.obtenerErrores();
+        const erroresLexicos = this.lexer.obtenerErrores();
         
         this.mostrarSeccionReportes();
-        this.actualizarReporteErrores(errores);
+        this.actualizarReporteErrores(erroresLexicos, []);
     }
+
+    mostrarReporteAST() {
+        const codigoJava = document.getElementById('codigoJava').value;
+        const tokens = this.lexer.tokenizar(codigoJava);
+        
+        try {
+            const ast = this.parser.parsear(tokens);
+            this.mostrarSeccionReportes();
+            this.actualizarReporteAST(ast);
+        } catch (error) {
+            console.error('Error al generar AST:', error);
+            this.mostrarSeccionReportes();
+            this.actualizarReporteAST(null);
+        }
+    }
+
+    actualizarReporteErrores(erroresLexicos, erroresSintacticos) {
+        const tablaLexicosBody = document.querySelector('#tablaErroresLexicos tbody');
+        const tablaSintacticosBody = document.querySelector('#tablaErroresSintacticos tbody');
+        const contador = document.getElementById('contadorErrores');
+        
+        //Limpiar tablas
+        tablaLexicosBody.innerHTML = '';
+        tablaSintacticosBody.innerHTML = '';
+        
+        //Actualizar contador
+        const totalErrores = erroresLexicos.length + erroresSintacticos.length;
+        contador.textContent = totalErrores;
+        
+        //Llenar tabla de errores lexicos
+        erroresLexicos.forEach((error, index) => {
+            const fila = document.createElement('tr');
+            fila.innerHTML = `
+                <td>${index + 1}</td>
+                <td><code>${this.escapeHTML(error.mensaje.split(':')[0])}</code></td>
+                <td>${error.mensaje}</td>
+                <td>${error.linea}</td>
+                <td>${error.columna}</td>
+            `;
+            tablaLexicosBody.appendChild(fila);
+        });
+        
+        //Llenar tabla de errores sintacticos
+        erroresSintacticos.forEach((error, index) => {
+            const fila = document.createElement('tr');
+            fila.innerHTML = `
+                <td>${index + 1}</td>
+                <td><code>${this.escapeHTML(error.mensaje.split(':')[0])}</code></td>
+                <td>${error.mensaje}</td>
+                <td>${error.linea}</td>
+                <td>${error.columna}</td>
+            `;
+            tablaSintacticosBody.appendChild(fila);
+        });
+        
+        //Mostrar seccion de errores y ocultar otras
+        document.getElementById('reporteTokens').style.display = 'none';
+        document.getElementById('reporteErrores').style.display = 'block';
+        document.getElementById('reporteAST').style.display = 'none';
+        
+        //Mostrar pestaña lexicos por defecto
+        this.cambiarPestañaErrores('lexicos');
+    }
+
+    actualizarReporteAST(ast) {
+        const astJson = document.getElementById('astJson');
+        
+        if (ast) {
+            astJson.textContent = JSON.stringify(ast, null, 2);
+        } else {
+            astJson.textContent = 'No se pudo generar el AST debido a errores sintacticos.';
+        }
+        
+        //Mostrar seccion AST y ocultar otras
+        document.getElementById('reporteTokens').style.display = 'none';
+        document.getElementById('reporteErrores').style.display = 'none';
+        document.getElementById('reporteAST').style.display = 'block';
+    }
+
+
 
     mostrarSeccionReportes() {
         document.getElementById('seccionReportes').style.display = 'block';
@@ -373,6 +504,16 @@ class AppJavaBridge {
             
         } catch (error) {
             console.error('Error en traduccion:', error);
+            
+            //Mostrar errores sintacticos si hay
+            const erroresSintacticos = this.parser.obtenerErrores();
+            const erroresLexicos = this.lexer.obtenerErrores();
+            
+            if (erroresSintacticos.length > 0 || erroresLexicos.length > 0) {
+                this.mostrarSeccionReportes();
+                this.actualizarReporteErrores(erroresLexicos, erroresSintacticos);
+            }
+            
             areaTextoPython.value = `# Error en traduccion\n# ${error.message}`;
         }
     }
