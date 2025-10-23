@@ -31,7 +31,7 @@ class Parser {
     }
 
     //PROGRAMA ::= 'public' 'class' ID '{' MAIN '}'
-     parsearPrograma() {
+    parsearPrograma() {
         this.coincidirExacto('PALABRA_RESERVADA', 'public', 'Se esperaba "public"');
         this.coincidirExacto('PALABRA_RESERVADA', 'class', 'Se esperaba "class"');
 
@@ -140,8 +140,6 @@ class Parser {
             return this.parsearPrint();
         }
         
-        //Faltaaaaaaa el FOR
-        
         //Token no reconocido
         this.agregarError(`Sentencia no reconocida: '${token.lexema}'`, token.linea, token.columna);
         this.avanzar();
@@ -153,7 +151,82 @@ class Parser {
         };
     }
 
-    // IF ::= 'if' '(' EXPRESION ')' '{' SENTENCIAS '}' ('else' '{' SENTENCIAS '}')?
+    //FOR ::= 'for' '(' FOR_INIT ';' EXPRESION ';' FOR_UPDATE ')' '{' SENTENCIAS '}'
+    parsearFor() {
+        const inicioLinea = this.tokenActual().linea;
+        const inicioColumna = this.tokenActual().columna;
+        
+        this.coincidirExacto('PALABRA_RESERVADA', 'for', 'Se esperaba "for"');
+        this.coincidirExacto('SIMBOLO', '(', 'Se esperaba "(" despues de for');
+        
+        //FOR_INIT ::= TIPO ID '=' EXPRESION
+        const inicializacion = this.parsearForInicializacion();
+        
+        this.coincidirExacto('SIMBOLO', ';', 'Se esperaba ";" despues de inicializacion de for');
+        
+        //EXPRESION condicion
+        const condicion = this.parsearExpresion();
+        
+        this.coincidirExacto('SIMBOLO', ';', 'Se esperaba ";" despues de condicion de for');
+        
+        //FOR_UPDATE ::= ID ('++' | '--')
+        const actualizacion = this.parsearForActualizacion();
+        
+        this.coincidirExacto('SIMBOLO', ')', 'Se esperaba ")" despues de actualizacion de for');
+        this.coincidirExacto('SIMBOLO', '{', 'Se esperaba "{" despues de for');
+        
+        const sentencias = this.parsearSentencias();
+        
+        this.coincidirExacto('SIMBOLO', '}', 'Se esperaba "}" al final del for');
+
+        return {
+            tipo: 'FOR',
+            inicializacion: inicializacion,
+            condicion: condicion,
+            actualizacion: actualizacion,
+            sentencias: sentencias,
+            linea: inicioLinea,
+            columna: inicioColumna
+        };
+    }
+
+    //FOR_INIT ::= TIPO ID '=' EXPRESION
+    parsearForInicializacion() {
+        const tipo = this.parsearTipo();
+        const variable = this.coincidirTipo('IDENTIFICADOR', 'Se esperaba nombre de variable en for');
+        this.coincidirExacto('SIMBOLO', '=', 'Se esperaba "=" en inicializacion de for');
+        const expresion = this.parsearExpresion();
+        
+        return {
+            tipo: tipo,
+            variable: variable.lexema,
+            expresion: expresion,
+            linea: variable.linea,
+            columna: variable.columna
+        };
+    }
+
+    //FOR_UPDATE ::= ID ('++' | '--')
+    parsearForActualizacion() {
+        const variable = this.coincidirTipo('IDENTIFICADOR', 'Se esperaba nombre de variable en actualizacion de for');
+        
+        let operador;
+        if (this.tokenActual() && (this.tokenActual().lexema === '++' || this.tokenActual().lexema === '--')) {
+            operador = this.tokenActual();
+            this.avanzar();
+        } else {
+            throw new Error('Se esperaba "++" o "--" en actualizacion de for');
+        }
+        
+        return {
+            variable: variable.lexema,
+            operador: operador.lexema,
+            linea: variable.linea,
+            columna: variable.columna
+        };
+    }
+
+    //IF ::= 'if' '(' EXPRESION ')' '{' SENTENCIAS '}' ('else' '{' SENTENCIAS '}')?
     parsearIf() {
         const inicioLinea = this.tokenActual().linea;
         const inicioColumna = this.tokenActual().columna;
@@ -172,7 +245,7 @@ class Parser {
         
         let sentenciasElse = null;
         if (this.tokenActual() && this.tokenActual().tipo === 'PALABRA_RESERVADA' && this.tokenActual().lexema === 'else') {
-            this.avanzar(); // Saltar 'else'
+            this.avanzar(); //Saltar 'else'
             this.coincidirExacto('SIMBOLO', '{', 'Se esperaba "{" despues de else');
             
             sentenciasElse = this.parsearSentencias();
@@ -278,7 +351,7 @@ class Parser {
         
         let valorInicial = null;
         if (this.tokenActual() && this.tokenActual().lexema === '=') {
-            this.avanzar(); // Saltar '='
+            this.avanzar(); //Saltar '='
             valorInicial = this.parsearExpresion();
         }
         
@@ -415,7 +488,7 @@ class Parser {
         
         //Expresion entre parentesis
         if (token.lexema === '(') {
-            this.avanzar(); // Saltar '('
+            this.avanzar(); //Saltar '('
             const expresion = this.parsearExpresion();
             this.coincidirExacto('SIMBOLO', ')', 'Se esperaba ")" despues de expresion');
             return expresion;
