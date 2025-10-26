@@ -409,83 +409,212 @@ class AppJavaBridge {
 
     descargarReporteHTML() {
         const tokens = this.lexer.obtenerTokens();
-        const errores = this.lexer.obtenerErrores();
+        const erroresLexicos = this.lexer.obtenerErrores();
+        const erroresSintacticos = this.parser.obtenerErrores();
         
-        const html = this.generarHTMLReporte(tokens, errores);
-        this.guardarArchivo(html, 'html', 'reporte_analisis.html');
+        const html = this.generarHTMLReporte(tokens, erroresLexicos, erroresSintacticos);
+        this.guardarArchivo(html, 'html', `reporte_analisis_${Date.now()}.html`);
     }
 
-    generarHTMLReporte(tokens, errores) {
+
+
+    //GENERAR REPORTE HTML DE TOKENS Y ERRORES
+    generarHTMLReporte(tokens, erroresLexicos, erroresSintacticos) {
+        const fecha = new Date().toLocaleString();
+        
         return `
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Reporte de Analisis - JavaBridge</title>
+    <title>JavaBridge - Reporte de Analisis</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        h1, h2 { color: #2c3e50; }
-        table { width: 100%; border-collapse: collapse; margin: 15px 0; }
-        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-        th { background-color: #3498db; color: white; }
-        tr:nth-child(even) { background-color: #f2f2f2; }
-        .contador { font-weight: bold; color: #e74c3c; }
-        .error { color: #e74c3c; }
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 20px; 
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1, h2 { 
+            color: #2c3e50; 
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .info {
+            background: #e8f4fc;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            margin: 20px 0;
+            font-size: 14px;
+        }
+        th, td { 
+            border: 1px solid #ddd; 
+            padding: 12px; 
+            text-align: left; 
+        }
+        th { 
+            background-color: #3498db; 
+            color: white; 
+            font-weight: bold;
+        }
+        tr:nth-child(even) { 
+            background-color: #f8f9fa; 
+        }
+        tr:hover {
+            background-color: #e8f4fc;
+        }
+        .contador { 
+            font-weight: bold; 
+            color: #e74c3c; 
+        }
+        .error { 
+            color: #e74c3c; 
+            font-weight: bold;
+        }
+        .exito {
+            color: #27ae60;
+            font-weight: bold;
+        }
+        .seccion {
+            margin-bottom: 40px;
+        }
+        .token-type {
+            font-family: 'Consolas', monospace;
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
     </style>
 </head>
 <body>
-    <h1>JavaBridge - Reporte de Analisis Lexico</h1>
-    <p>Generado: ${new Date().toLocaleString()}</p>
-    
-    <h2>Tokens Encontrados: <span class="contador">${tokens.length}</span></h2>
-    <table>
-        <thead>
-            <tr>
-                <th>No.</th>
-                <th>Lexema</th>
-                <th>Tipo</th>
-                <th>Linea</th>
-                <th>Columna</th>
-            </tr>
-        </thead>
-        <tbody>
-            ${tokens.map((token, index) => `
-                <tr>
-                    <td>${index + 1}</td>
-                    <td><code>${token.lexema}</code></td>
-                    <td>${token.tipo}</td>
-                    <td>${token.linea}</td>
-                    <td>${token.columna}</td>
-                </tr>
-            `).join('')}
-        </tbody>
-    </table>
-    
-    <h2>Errores Lexicos: <span class="contador">${errores.length}</span></h2>
-    ${errores.length > 0 ? `
-    <table>
-        <thead>
-            <tr>
-                <th>No.</th>
-                <th>Error</th>
-                <th>Descripcion</th>
-                <th>Linea</th>
-                <th>Columna</th>
-            </tr>
-        </thead>
-        <tbody>
-            ${errores.map((error, index) => `
-                <tr>
-                    <td>${index + 1}</td>
-                    <td class="error"><code>${error.mensaje.split(':')[0]}</code></td>
-                    <td>${error.mensaje}</td>
-                    <td>${error.linea}</td>
-                    <td>${error.columna}</td>
-                </tr>
-            `).join('')}
-        </tbody>
-    </table>
-    ` : '<p>No se encontraron errores lexicos</p>'}
+    <div class="container">
+        <h1>JavaBridge - Reporte de Analisis</h1>
+        
+        <div class="info">
+            <strong>Generado:</strong> ${fecha}<br>
+            <strong>Tokens encontrados:</strong> <span class="contador">${tokens.length}</span><br>
+            <strong>Errores lexicos:</strong> <span class="contador">${erroresLexicos.length}</span><br>
+            <strong>Errores sintacticos:</strong> <span class="contador">${erroresSintacticos.length}</span>
+        </div>
+
+        <!-- SECCION DE TOKENS -->
+        <div class="seccion">
+            <h2>Tokens Encontrados</h2>
+            ${tokens.length > 0 ? `
+            <table>
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Lexema</th>
+                        <th>Tipo</th>
+                        <th>Linea</th>
+                        <th>Columna</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${tokens.map((token, index) => `
+                        <tr>
+                            <td>${index + 1}</td>
+                            <td><code>${this.escapeHTML(token.lexema)}</code></td>
+                            <td><span class="token-type">${token.tipo}</span></td>
+                            <td>${token.linea}</td>
+                            <td>${token.columna}</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+            ` : '<p class="exito">No se encontraron tokens.</p>'}
+        </div>
+
+        <!-- SECCION DE ERRORES LEXICOS -->
+        <div class="seccion">
+            <h2>Errores Lexicos</h2>
+            ${erroresLexicos.length > 0 ? `
+            <table>
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Error</th>
+                        <th>Descripcion</th>
+                        <th>Linea</th>
+                        <th>Columna</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${erroresLexicos.map((error, index) => `
+                        <tr>
+                            <td>${index + 1}</td>
+                            <td class="error"><code>${this.escapeHTML(error.mensaje.split(':')[0])}</code></td>
+                            <td>${this.escapeHTML(error.mensaje)}</td>
+                            <td>${error.linea}</td>
+                            <td>${error.columna}</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+            ` : '<p class="exito">No se encontraron errores lexicos</p>'}
+        </div>
+
+        <!-- SECCION DE ERRORES SINTACTICOS -->
+        <div class="seccion">
+            <h2>Errores Sintacticos</h2>
+            ${erroresSintacticos.length > 0 ? `
+            <table>
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Error</th>
+                        <th>Descripcion</th>
+                        <th>Linea</th>
+                        <th>Columna</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${erroresSintacticos.map((error, index) => `
+                        <tr>
+                            <td>${index + 1}</td>
+                            <td class="error"><code>${this.escapeHTML(error.mensaje.split(':')[0])}</code></td>
+                            <td>${this.escapeHTML(error.mensaje)}</td>
+                            <td>${error.linea}</td>
+                            <td>${error.columna}</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+            ` : '<p class="exito">No se encontraron errores sintacticos</p>'}
+        </div>
+
+        <!-- RESUMEN -->
+        <div class="seccion">
+            <h2>Resumen del Analisis</h2>
+            <div class="info">
+                ${erroresLexicos.length === 0 && erroresSintacticos.length === 0 ? 
+                    '<p class="exito">Analisis completado sin errores. El codigo es valido.</p>' :
+                    `<p class="error">Se encontraron ${erroresLexicos.length + erroresSintacticos.length} errores que deben ser corregidos</p>`
+                }
+                <p><strong>Total de tokens procesados:</strong> ${tokens.length}</p>
+                <p><strong>Estado:</strong> ${erroresLexicos.length === 0 && erroresSintacticos.length === 0 ? 
+                    '<span class="exito">VALIDO</span>' : 
+                    '<span class="error">INVALIDO</span>'}</p>
+            </div>
+        </div>
+    </div>
 </body>
 </html>`;
     }
@@ -495,26 +624,29 @@ class AppJavaBridge {
         const areaTextoPython = document.getElementById('codigoPython');
         
         try {
-            //FLUJO COMPLETO: Lexico -> Sintactico -> Traduccion
+            //ANALISIS LEXICO
             const tokens = this.lexer.tokenizar(codigoJava);
-            const ast = this.parser.parsear(tokens);
-            const codigoPython = this.traductor.traducir(ast);
+            const erroresLexicos = this.lexer.obtenerErrores();
             
+            //ANALISIS SINTACTICO
+            const ast = this.parser.parsear(tokens);
+            const erroresSintacticos = this.parser.obtenerErrores();
+            
+            //Si hay errores, mostrar reporte
+            if (erroresLexicos.length > 0 || erroresSintacticos.length > 0) {
+                this.mostrarSeccionReportes();
+                this.actualizarReporteErrores(erroresLexicos, erroresSintacticos);
+                areaTextoPython.value = '#Error: Corrija los errores antes de traducir';
+                return;
+            }
+            
+            //TRADUCCION
+            const codigoPython = this.traductor.traducir(ast);
             areaTextoPython.value = codigoPython;
             
         } catch (error) {
             console.error('Error en traduccion:', error);
-            
-            //Mostrar errores sintacticos si hay
-            const erroresSintacticos = this.parser.obtenerErrores();
-            const erroresLexicos = this.lexer.obtenerErrores();
-            
-            if (erroresSintacticos.length > 0 || erroresLexicos.length > 0) {
-                this.mostrarSeccionReportes();
-                this.actualizarReporteErrores(erroresLexicos, erroresSintacticos);
-            }
-            
-            areaTextoPython.value = `# Error en traduccion\n# ${error.message}`;
+            areaTextoPython.value = `#Error en traduccion\n# ${error.message}`;
         }
     }
 }
