@@ -271,9 +271,15 @@ class AppJavaBridge {
     }
 
     actualizarReporteErrores(erroresLexicos, erroresSintacticos) {
+        //Verificar que los elementos existen antes de usarlos
         const tablaLexicosBody = document.querySelector('#tablaErroresLexicos tbody');
         const tablaSintacticosBody = document.querySelector('#tablaErroresSintacticos tbody');
         const contador = document.getElementById('contadorErrores');
+        
+        if (!tablaLexicosBody || !tablaSintacticosBody || !contador) {
+            console.error('No se encontraron elementos del reporte de errores');
+            return;
+        }
         
         //Limpiar tablas
         tablaLexicosBody.innerHTML = '';
@@ -309,12 +315,11 @@ class AppJavaBridge {
             tablaSintacticosBody.appendChild(fila);
         });
         
-        //Mostrar seccion de errores y ocultar otras
+        //Mostrar seccion de errores
         document.getElementById('reporteTokens').style.display = 'none';
         document.getElementById('reporteErrores').style.display = 'block';
         document.getElementById('reporteAST').style.display = 'none';
         
-        //Mostrar pestaña lexicos por defecto
         this.cambiarPestañaErrores('lexicos');
     }
 
@@ -324,7 +329,7 @@ class AppJavaBridge {
         if (ast) {
             astJson.textContent = JSON.stringify(ast, null, 2);
         } else {
-            astJson.textContent = 'No se pudo generar el AST debido a errores sintacticos.';
+            astJson.textContent = 'No se pudo generar el AST debido a errores sintacticos';
         }
         
         //Mostrar seccion AST y ocultar otras

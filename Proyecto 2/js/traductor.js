@@ -73,17 +73,26 @@ class Traductor {
 
     //TRADUCIR DECLARACIONES DE VARIABLES: int x = 5;
     traducirDeclaracion(declaracion) {
+        //Mapeo correcto de tipos Java a Python
+        const mapeoTipos = {
+            'int': 'int',
+            'double': 'float', // double -> float en Python
+            'char': 'str',
+            'String': 'str', 
+            'boolean': 'bool'
+        };
+    
         for (const variable of declaracion.variables) {
             const nombreVar = variable.nombre;
             this.variablesDeclaradas.add(nombreVar);
-            
-            //Valor por defecto o valor inicial
+        
             let valorPython = this.obtenerValorPorDefecto(declaracion.tipoDato);
             if (variable.valorInicial) {
                 valorPython = this.traducirExpresion(variable.valorInicial);
             }
-            
-            const comentario = `#Declaracion: ${declaracion.tipoDato}`;
+        
+            const tipoPython = mapeoTipos[declaracion.tipoDato] || declaracion.tipoDato;
+            const comentario = `# Declaracion: ${declaracion.tipoDato} -> ${tipoPython}`;
             this.agregarLinea(`${nombreVar} = ${valorPython} ${comentario}`);
         }
     }
@@ -177,39 +186,58 @@ class Traductor {
     traducirLiteral(literal) {
         switch (literal.subtipo) {
             case 'ENTERO':
+                return literal.valor;
             case 'DECIMAL':
-                return literal.valor; //Numeros iguales
+                return literal.valor;
             case 'CARACTER':
-                return `'${literal.valor.replace(/'/g, "\\'")}'`; // 'a' → 'a'
+                //Manejar caracteres escapados
+                const charContent = literal.valor.slice(1, -1); //Quitar comillas simples
+                return `'${this.escapeCaracter(charContent)}'`;
             case 'CADENA':
-                return `"${literal.valor.replace(/"/g, '\\"')}"`; // "hola" -> "hola"
+                const stringContent = literal.valor.slice(1, -1); //Quitar comillas dobles
+                return `"${this.escapeCadena(stringContent)}"`;
             case 'BOOLEANO':
-                return literal.valor === 'true' ? 'True' : 'False'; // true -> True
+                return literal.valor === 'true' ? 'True' : 'False';
             default:
                 return literal.valor;
         }
     }
 
+    //---- FUNCIONES DE ESCAPE ----
+    escapeCaracter(texto) {
+        return texto.replace(/'/g, "\\'").replace(/\n/g, "\\n").replace(/\t/g, "\\t");
+    }
+
+    escapeCadena(texto) {
+        return texto.replace(/"/g, '\\"').replace(/\n/g, "\\n").replace(/\t/g, "\\t");
+    }
+
+
     //TRADUCIR OPERACIONES (+, -, *, /, ==)
     traducirExpresionBinaria(expresion) {
         const izquierdo = this.traducirExpresion(expresion.izquierdo);
         const derecho = this.traducirExpresion(expresion.derecho);
-        
-        //Manejo para concatenaciones
+    
+        //Para suma verificar si es concatenacion con strings
         if (expresion.operador === '+') {
-            const izqEsNum = this.esNumero(expresion.izquierdo);
-            const derEsNum = this.esNumero(expresion.derecho);
-            const izqEsBool = this.esBooleano(expresion.izquierdo);
-            const derEsBool = this.esBooleano(expresion.derecho);
-            
-            if ((izqEsNum || izqEsBool) && (derEsNum || derEsBool)) {
-                return `(${izquierdo} ${expresion.operador} ${derecho})`; // 5 + 3
-            } else {
-                return `str(${izquierdo}) + str(${derecho})`; // "a" + 5 -> "a" + str(5)
+            const izquierdoEsString = this.esString(expresion.izquierdo);
+            const derechoEsString = this.esString(expresion.derecho);
+        
+            if (izquierdoEsString || derechoEsString) {
+                //Si alguno es string convertir ambos a string
+                const izquierdoStr = izquierdoEsString ? izquierdo : `str(${izquierdo})`;
+                const derechoStr = derechoEsString ? derecho : `str(${derecho})`;
+                return `${izquierdoStr} + ${derechoStr}`;
             }
         }
-        
-        return `(${izquierdo} ${expresion.operador} ${derecho})`; //Operaciones normales
+    
+        return `(${izquierdo} ${expresion.operador} ${derecho})`;
+    }
+
+    //FUNCION PARA VERIFICAR SI ES string
+    esString(expresion) {
+        return (expresion.tipo === 'LITERAL' && expresion.subtipo === 'CADENA') ||
+            (expresion.tipo === 'VARIABLE' && this.variablesDeclaradas.has(expresion.nombre));
     }
 
     //OBTENER VALORES POR DEFECTO PARA CADA TIPO

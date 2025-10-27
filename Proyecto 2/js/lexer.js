@@ -31,6 +31,16 @@ class Lexer {
             if (this.esEspacio(caracterActual)) {
                 this.procesarEspacio();
 
+            } else if (caracterActual === '/' && this.posicion + 1 < this.codigo.length) {
+                const siguienteCaracter = this.codigo[this.posicion + 1];
+                if (siguienteCaracter === '/') {
+                    this.procesarComentarioLinea();
+                } else if (siguienteCaracter === '*') {
+                    this.procesarComentarioBloque();
+                } else {
+                    this.procesarSimbolo();
+                }
+
             } else if (caracterActual === "'") {
                 this.procesarCaracter();
 
@@ -40,7 +50,7 @@ class Lexer {
             } else if (this.esLetra(caracterActual) || caracterActual === '_') {
                 this.procesarIdentificador();
 
-            } else if (this.esDigito(caracterActual) || caracterActual === '-') {
+            } else if (this.esDigito(caracterActual) || (caracterActual === '-' && this.posicion + 1 < this.codigo.length && this.esDigito(this.codigo[this.posicion + 1]))) {
                 this.procesarNumero();
 
             } else {
@@ -77,6 +87,61 @@ class Lexer {
             }
             this.posicion++;
         }
+    }
+
+    procesarComentarioLinea() {
+        const inicioLinea = this.lineaActual;
+        const inicioColumna = this.columnaActual;
+        let lexema = '//';
+        
+        this.posicion += 2; // Saltar '//'
+        this.columnaActual += 2;
+        
+        //Leer hasta fin de linea
+        while (this.posicion < this.codigo.length && this.codigo[this.posicion] !== '\n') {
+            lexema += this.codigo[this.posicion];
+            this.posicion++;
+            this.columnaActual++;
+        }
+        
+        this.agregarToken(lexema, 'COMENTARIO_LINEA', inicioLinea, inicioColumna);
+    }
+
+    procesarComentarioBloque() {
+        const inicioLinea = this.lineaActual;
+        const inicioColumna = this.columnaActual;
+        let lexema = '/*';
+        
+        this.posicion += 2; // Saltar '/*'
+        this.columnaActual += 2;
+        
+        let cerrado = false;
+        while (this.posicion < this.codigo.length - 1) {
+            if (this.codigo[this.posicion] === '*' && this.codigo[this.posicion + 1] === '/') {
+                lexema += '*/';
+                this.posicion += 2;
+                this.columnaActual += 2;
+                cerrado = true;
+                break;
+            }
+            
+            if (this.codigo[this.posicion] === '\n') {
+                this.lineaActual++;
+                this.columnaActual = 1;
+            } else {
+                this.columnaActual++;
+            }
+            
+            lexema += this.codigo[this.posicion];
+            this.posicion++;
+        }
+        
+        if (!cerrado) {
+            this.agregarError('Comentario de bloque no cerrado', inicioLinea, inicioColumna);
+            return;
+        }
+        
+        this.agregarToken(lexema, 'COMENTARIO_BLOQUE', inicioLinea, inicioColumna);
     }
 
     procesarIdentificador() {
@@ -210,10 +275,20 @@ class Lexer {
                 this.agregarError('Cadena no cerrada: salto de linea dentro de cadena', inicioLinea, inicioColumna);
                 return;
             }
-            
-            lexema += this.codigo[this.posicion];
-            this.posicion++;
-            this.columnaActual++;
+
+            //Manejar caracteres escapados
+            if (this.codigo[this.posicion] === '\\' && this.posicion + 1 < this.codigo.length) {
+                lexema += this.codigo[this.posicion]; //la barra invertida
+                this.posicion++;
+                this.columnaActual++;
+                lexema += this.codigo[this.posicion]; //el caracter escapado
+                this.posicion++;
+                this.columnaActual++;
+            } else {
+                lexema += this.codigo[this.posicion];
+                this.posicion++;
+                this.columnaActual++;
+            }
         }
 
         if (this.posicion >= this.codigo.length) {
@@ -253,15 +328,7 @@ class Lexer {
         }
 
         //Simbolos de 1 caracter
-        if (caracterActual === '{' || caracterActual === '}' ||
-            caracterActual === '(' || caracterActual === ')' ||
-            caracterActual === '[' || caracterActual === ']' ||
-            caracterActual === ';' || caracterActual === ',' ||
-            caracterActual === '=' || caracterActual === '+' ||
-            caracterActual === '-' || caracterActual === '*' ||
-            caracterActual === '/' || caracterActual === '>' ||
-            caracterActual === '<') {
-            
+        if (this.simbolos.includes(caracterActual)) {
             this.posicion++;
             this.columnaActual++;
             this.agregarToken(lexema, 'SIMBOLO', inicioLinea, inicioColumna);

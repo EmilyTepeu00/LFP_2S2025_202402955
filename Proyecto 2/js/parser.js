@@ -84,6 +84,7 @@ class Parser {
 
     //SENTENCIAS ::= SENTENCIA SENTENCIAS | ε
     parsearSentencias() {
+        console.log('Parseando sentencias...');
         const sentencias = [];
         
         while (this.tokenActual() && 
@@ -104,6 +105,8 @@ class Parser {
         const token = this.tokenActual();
         
         if (!token) return null;
+        
+        console.log(`Parseando sentencia: ${token.lexema}`);
         
         //Sentencia vacia (solo punto y coma)
         if (token.tipo === 'SIMBOLO' && token.lexema === ';') {
@@ -128,6 +131,11 @@ class Parser {
         //IF ::= 'if' '(' EXPRESION ')' '{' SENTENCIAS '}' ('else' '{' SENTENCIAS '}')?
         if (token.tipo === 'PALABRA_RESERVADA' && token.lexema === 'if') {
             return this.parsearIf();
+        }
+
+        //FOR ::= 'for' '(' FOR_INIT ';' EXPRESION ';' FOR_UPDATE ')' '{' SENTENCIAS '}'
+        if (token.tipo === 'PALABRA_RESERVADA' && token.lexema === 'for') {
+            return this.parsearFor();
         }
         
         //WHILE ::= 'while' '(' EXPRESION ')' '{' SENTENCIAS '}'
@@ -245,7 +253,7 @@ class Parser {
         
         let sentenciasElse = null;
         if (this.tokenActual() && this.tokenActual().tipo === 'PALABRA_RESERVADA' && this.tokenActual().lexema === 'else') {
-            this.avanzar(); //Saltar 'else'
+            this.avanzar(); // Saltar 'else'
             this.coincidirExacto('SIMBOLO', '{', 'Se esperaba "{" despues de else');
             
             sentenciasElse = this.parsearSentencias();
@@ -319,6 +327,8 @@ class Parser {
         const inicioLinea = this.tokenActual().linea;
         const inicioColumna = this.tokenActual().columna;
         
+        console.log('Parseando declaracion...');
+        
         const tipo = this.parsearTipo();
         const variables = this.parsearListaVariables();
         
@@ -338,7 +348,7 @@ class Parser {
         const variables = [this.parsearVariableDeclaracion()];
         
         while (this.tokenActual() && this.tokenActual().lexema === ',') {
-            this.avanzar(); //Saltar la coma
+            this.avanzar(); // Saltar la coma
             variables.push(this.parsearVariableDeclaracion());
         }
         
@@ -351,7 +361,7 @@ class Parser {
         
         let valorInicial = null;
         if (this.tokenActual() && this.tokenActual().lexema === '=') {
-            this.avanzar(); //Saltar '='
+            this.avanzar(); // Saltar '='
             valorInicial = this.parsearExpresion();
         }
         
@@ -367,6 +377,8 @@ class Parser {
     parsearAsignacion() {
         const inicioLinea = this.tokenActual().linea;
         const inicioColumna = this.tokenActual().columna;
+        
+        console.log('Parseando asignacion...');
         
         const id = this.coincidirTipo('IDENTIFICADOR', 'Se esperaba nombre de variable');
         this.coincidirExacto('SIMBOLO', '=', 'Se esperaba "=" en asignacion');
@@ -488,9 +500,9 @@ class Parser {
         
         //Expresion entre parentesis
         if (token.lexema === '(') {
-            this.avanzar(); //Saltar '('
+            this.avanzar(); // Saltar '('
             const expresion = this.parsearExpresion();
-            this.coincidirExacto('SIMBOLO', ')', 'Se esperaba ")" despues de expresion');
+            this.coincidirExacto('SIMBOLO', ')', 'Se esperaba ")" despues de expresión');
             return expresion;
         }
         
@@ -539,7 +551,7 @@ class Parser {
         }
         
         this.agregarError(mensajeError, token ? token.linea : 1, token ? token.columna : 1);
-        throw new Error(`Error sintactico: ${mensajeError}`);
+        throw new Error(`Error sintáctico: ${mensajeError}`);
     }
 
     coincidirExacto(tipoEsperado, lexemaEsperado, mensajeError) {
@@ -552,7 +564,7 @@ class Parser {
         const tokenActual = token ? `'${token.lexema}'` : 'fin de archivo';
         this.agregarError(`${mensajeError}, pero se encontró ${tokenActual}`, 
                          token ? token.linea : 1, token ? token.columna : 1);
-        throw new Error(`Error sintactico: ${mensajeError}`);
+        throw new Error(`Error sintáctico: ${mensajeError}`);
     }
 
     mirarAdelante(cantidad = 1) {
