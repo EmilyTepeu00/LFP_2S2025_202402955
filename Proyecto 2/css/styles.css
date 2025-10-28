@@ -302,3 +302,76 @@ code {
 .tabla-container table {
     margin-bottom: 0;
 }
+
+/* ESTILOS PARA LA SIMULACION */
+.simulacion-section {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    border: 1px solid #e1e1e1;
+    margin-top: 20px;
+}
+
+.simulacion-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid #3498db;
+}
+
+.consola-simulacion {
+    background: #2c3e50;
+    color: #ecf0f1;
+    padding: 15px;
+    border-radius: 6px;
+    font-family: 'Consolas', 'Monaco', monospace;
+    font-size: 14px;
+    max-height: 400px;
+    overflow-y: auto;
+    margin-bottom: 15px;
+}
+
+.consola-simulacion pre {
+    margin: 0;
+    white-space: pre-wrap;
+}
+
+/* BOTONES DE SIMULACION */
+#ejecutarPasoBtn, #ejecutarTodoBtn {
+    padding: 10px 20px;
+    margin: 5px;
+    background: #27ae60;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+#ejecutarPasoBtn:hover, #ejecutarTodoBtn:hover {
+    background: #219653;
+}
+
+/* RESPONSIVE */
+@media (max-width: 768px) {
+    .menu-archivo {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .menu-archivo button {
+        width: 200px;
+        margin: 5px 0;
+    }
+}
+
+/* ESTILOS BOTON SALIR */
+#salirBtn {
+    background: #e74c3c !important;
+}
+
+#salirBtn:hover {
+    background: #c0392b !important;
+}

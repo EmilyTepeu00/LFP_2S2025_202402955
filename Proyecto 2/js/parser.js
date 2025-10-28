@@ -7,26 +7,31 @@ class Parser {
     }
 
     parsear(tokens) {
-        console.log('Iniciando analisis sintactico...');
-        this.tokens = tokens;
+        console.log('=== INICIANDO PARSER ===');
+    
+        this.tokens = tokens.filter(token => 
+            token.tipo !== 'COMENTARIO_LINEA' && token.tipo !== 'COMENTARIO_BLOQUE'
+        );
         this.indiceTokenActual = 0;
         this.errores = [];
         this.ast = null;
 
         try {
             this.ast = this.parsearPrograma();
-            
-            //Verificar si hay tokens sobrantes
+        
+            //Verificar si hay tokens sobrantes (pero no lanzar error)
             if (this.indiceTokenActual < this.tokens.length) {
                 const tokenSobrante = this.tokenActual();
+                console.log('Tokens sobrantes:', this.tokens.slice(this.indiceTokenActual));
                 this.agregarError(`Token inesperado: '${tokenSobrante.lexema}'`, tokenSobrante.linea, tokenSobrante.columna);
             }
-            
+        
             return this.ast;
-            
+        
         } catch (error) {
-            console.error('Error en analisis sintactico:', error);
-            throw error;
+            console.error('Error en análisis sintáctico:', error);
+            //Devolver el AST parcial que se pudo construir
+            return this.ast;
         }
     }
 
@@ -54,23 +59,25 @@ class Parser {
 
     //MAIN ::= 'public' 'static' 'void' 'main' '(' 'String' '[' ']' ID ')' '{' SENTENCIAS '}'
     parsearMain() {
-        this.coincidirExacto('PALABRA_RESERVADA', 'public', 'Se esperaba "public" en metodo main');
-        this.coincidirExacto('PALABRA_RESERVADA', 'static', 'Se esperaba "static" en metodo main');
-        this.coincidirExacto('PALABRA_RESERVADA', 'void', 'Se esperaba "void" en metodo main');
+        console.log('Parseando método main...');
+    
+        this.coincidirExacto('PALABRA_RESERVADA', 'public', 'Se esperaba "public" en método main');
+        this.coincidirExacto('PALABRA_RESERVADA', 'static', 'Se esperaba "static" en método main');
+        this.coincidirExacto('PALABRA_RESERVADA', 'void', 'Se esperaba "void" en método main');
         this.coincidirExacto('PALABRA_RESERVADA', 'main', 'Se esperaba "main"');
-        
-        this.coincidirExacto('SIMBOLO', '(', 'Se esperaba "(" despues de main');
+    
+        this.coincidirExacto('SIMBOLO', '(', 'Se esperaba "(" después de main');
         this.coincidirExacto('PALABRA_RESERVADA', 'String', 'Se esperaba "String[]"');
         this.coincidirExacto('SIMBOLO', '[', 'Se esperaba "[" en String[]');
         this.coincidirExacto('SIMBOLO', ']', 'Se esperaba "]" en String[]');
-        
-        const args = this.coincidirTipo('IDENTIFICADOR', 'Se esperaba nombre de parametro args');
-        
-        this.coincidirExacto('SIMBOLO', ')', 'Se esperaba ")" despues de args');
-        this.coincidirExacto('SIMBOLO', '{', 'Se esperaba "{" despues de main');
-        
+    
+        const args = this.coincidirTipo('IDENTIFICADOR', 'Se esperaba nombre de parámetro args');
+    
+        this.coincidirExacto('SIMBOLO', ')', 'Se esperaba ")" después de args');
+        this.coincidirExacto('SIMBOLO', '{', 'Se esperaba "{" después de main');
+    
         const sentencias = this.parsearSentencias();
-        
+    
         this.coincidirExacto('SIMBOLO', '}', 'Se esperaba "}" al final de main');
 
         return {
@@ -103,11 +110,23 @@ class Parser {
     //SENTENCIA ::= DECLARACION | ASIGNACION | IF | FOR | WHILE | PRINT | ';'
     parsearSentencia() {
         const token = this.tokenActual();
-        
+    
         if (!token) return null;
-        
-        console.log(`Parseando sentencia: ${token.lexema}`);
-        
+    
+        console.log(`Parseando sentencia: ${token.lexema} (${token.tipo})`);
+
+        //Si el token es DESCONOCIDO, simplemente avanzar y continuar
+        if (token.tipo === 'DESCONOCIDO') {
+            console.log(`Token desconocido encontrado: '${token.lexema}', avanzando...`);
+            this.avanzar();
+            return {
+                tipo: 'TOKEN_DESCONOCIDO',
+                lexema: token.lexema,
+                linea: token.linea,
+                columna: token.columna
+            };
+        }
+    
         //Sentencia vacia (solo punto y coma)
         if (token.tipo === 'SIMBOLO' && token.lexema === ';') {
             this.avanzar();
@@ -117,37 +136,43 @@ class Parser {
                 columna: token.columna
             };
         }
-        
+    
         //DECLARACION ::= TIPO LISTA_VARS ';'
         if (this.esTipo(token)) {
             return this.parsearDeclaracion();
         }
-        
+    
         //ASIGNACION ::= ID '=' EXPRESION ';'
         if (token.tipo === 'IDENTIFICADOR' && this.mirarAdelante() && this.mirarAdelante().lexema === '=') {
             return this.parsearAsignacion();
         }
-        
+    
+        //INCREMENTO/DECREMENTO ::= ID ('++' | '--') ';'
+        if (token.tipo === 'IDENTIFICADOR' && this.mirarAdelante() && 
+            (this.mirarAdelante().lexema === '++' || this.mirarAdelante().lexema === '--')) {
+            return this.parsearIncremento();
+        }
+    
         //IF ::= 'if' '(' EXPRESION ')' '{' SENTENCIAS '}' ('else' '{' SENTENCIAS '}')?
         if (token.tipo === 'PALABRA_RESERVADA' && token.lexema === 'if') {
             return this.parsearIf();
         }
-
+    
         //FOR ::= 'for' '(' FOR_INIT ';' EXPRESION ';' FOR_UPDATE ')' '{' SENTENCIAS '}'
         if (token.tipo === 'PALABRA_RESERVADA' && token.lexema === 'for') {
             return this.parsearFor();
         }
-        
+    
         //WHILE ::= 'while' '(' EXPRESION ')' '{' SENTENCIAS '}'
         if (token.tipo === 'PALABRA_RESERVADA' && token.lexema === 'while') {
             return this.parsearWhile();
         }
-        
+    
         //PRINT ::= 'System' '.' 'out' '.' 'println' '(' EXPRESION ')' ';'
         if (token.tipo === 'PALABRA_RESERVADA' && token.lexema === 'System') {
             return this.parsearPrint();
         }
-        
+    
         //Token no reconocido
         this.agregarError(`Sentencia no reconocida: '${token.lexema}'`, token.linea, token.columna);
         this.avanzar();
@@ -156,6 +181,31 @@ class Parser {
             lexema: token.lexema,
             linea: token.linea,
             columna: token.columna
+        };
+    }
+
+    //Agrega esta nueva funcion para manejar incrementos/decrementos
+    parsearIncremento() {
+        const inicioLinea = this.tokenActual().linea;
+        const inicioColumna = this.tokenActual().columna;
+    
+        const variable = this.coincidirTipo('IDENTIFICADOR', 'Se esperaba nombre de variable');
+        const operador = this.tokenActual();
+    
+        if (operador.lexema === '++' || operador.lexema === '--') {
+            this.avanzar();
+        } else {
+            throw new Error('Se esperaba "++" o "--"');
+        }
+    
+        this.coincidirExacto('SIMBOLO', ';', 'Se esperaba ";" después del incremento');
+    
+        return {
+            tipo: 'INCREMENTO',
+            variable: variable.lexema,
+            operador: operador.lexema,
+            linea: inicioLinea,
+            columna: inicioColumna
         };
     }
 
@@ -326,32 +376,85 @@ class Parser {
     parsearDeclaracion() {
         const inicioLinea = this.tokenActual().linea;
         const inicioColumna = this.tokenActual().columna;
+    
+        console.log('Parseando declaración...');
+    
+        try {
+            const tipo = this.parsearTipo();
+            const variables = this.parsearListaVariables();
         
-        console.log('Parseando declaracion...');
-        
-        const tipo = this.parsearTipo();
-        const variables = this.parsearListaVariables();
-        
-        this.coincidirExacto('SIMBOLO', ';', 'Se esperaba ";" al final de la declaracion');
+            // Intentar encontrar el ; incluso si hay errores
+            if (this.tokenActual() && this.tokenActual().lexema === ';') {
+                this.avanzar();
+            } else {
+                this.agregarError('Se esperaba ";"', this.tokenActual().linea, this.tokenActual().columna);
+                // Buscar el siguiente ; o } para recuperarse
+                this.recoverToNextSemicolon();
+            }
 
-        return {
-            tipo: 'DECLARACION',
-            tipoDato: tipo,
-            variables: variables,
-            linea: inicioLinea,
-            columna: inicioColumna
-        };
+            return {
+                tipo: 'DECLARACION',
+                tipoDato: tipo,
+                variables: variables,
+                linea: inicioLinea,
+                columna: inicioColumna
+            };
+        
+        } catch (error) {
+            console.error('Error en declaración:', error);
+            //Recuperarse buscando el siguiente ;
+            this.recoverToNextSemicolon();
+            return {
+                tipo: 'DECLARACION_FALLIDA',
+                linea: inicioLinea,
+                columna: inicioColumna
+            };
+        }
+    }
+
+    //Funcion DE recuperacion
+    recoverToNextSemicolon() {
+        while (this.tokenActual() && 
+               this.tokenActual().lexema !== ';' && 
+               this.tokenActual().lexema !== '}' &&
+               this.indiceTokenActual < this.tokens.length) {
+            this.avanzar();
+        }
+        if (this.tokenActual() && this.tokenActual().lexema === ';') {
+            this.avanzar(); // Consumir el ;
+        }
     }
 
     //LISTA_VARS ::= VAR_DECL (',' VAR_DECL)*
     parsearListaVariables() {
-        const variables = [this.parsearVariableDeclaracion()];
-        
-        while (this.tokenActual() && this.tokenActual().lexema === ',') {
-            this.avanzar(); // Saltar la coma
+        const variables = [];
+    
+        try {
             variables.push(this.parsearVariableDeclaracion());
-        }
         
+            while (this.tokenActual() && this.tokenActual().lexema === ',') {
+                this.avanzar(); // Saltar la coma
+                try {
+                    variables.push(this.parsearVariableDeclaracion());
+                } catch (error) {
+                    console.error('Error en variable de lista:', error);
+                    // Intentar recuperarse
+                    if (this.tokenActual() && this.tokenActual().tipo === 'IDENTIFICADOR') {
+                        variables.push({
+                            nombre: this.tokenActual().lexema,
+                            valorInicial: null,
+                            linea: this.tokenActual().linea,
+                            columna: this.tokenActual().columna
+                        });
+                        this.avanzar();
+                    }
+                    break;
+                }
+            }
+        } catch (error) {
+            console.error('Error en lista de variables:', error);
+        }
+    
         return variables;
     }
 
@@ -560,11 +663,18 @@ class Parser {
             this.avanzar();
             return token;
         }
-        
+    
         const tokenActual = token ? `'${token.lexema}'` : 'fin de archivo';
         this.agregarError(`${mensajeError}, pero se encontró ${tokenActual}`, 
                          token ? token.linea : 1, token ? token.columna : 1);
-        throw new Error(`Error sintáctico: ${mensajeError}`);
+    
+        //En lugar de lanzar error, devolver un token simulado
+        return {
+            tipo: tipoEsperado,
+            lexema: lexemaEsperado,
+            linea: token ? token.linea : 1,
+            columna: token ? token.columna : 1
+        };
     }
 
     mirarAdelante(cantidad = 1) {

@@ -12,11 +12,8 @@ class Traductor {
         this.variablesDeclaradas.clear();
 
         if (!ast) {
-            return '#Error: No se pudo generar el AST\n';
+            return '# Error: No se pudo generar el AST\n';
         }
-
-        this.agregarLinea('#Traducido de Java a Python');
-        this.agregarLinea('');
 
         this.traducirPrograma(ast);
 
@@ -25,13 +22,17 @@ class Traductor {
 
     //TRADUCIR LA ESTRUCTURA PRINCIPAL
     traducirPrograma(programa) {
-        this.agregarLinea(`#Clase: ${programa.nombreClase}`);
+        this.agregarLinea('# Traducido de Java a Python');
         this.agregarLinea('');
+        this.agregarLinea(`# Clase: ${programa.nombreClase}`);
+        this.agregarLinea('');
+
         this.traducirMain(programa.main);
     }
 
     //TRADUCIR EL METODO MAIN (en python se ejecuta directamente)
     traducirMain(main) {
+        this.agregarLinea('# Declaraciones');
         this.traducirSentencias(main.sentencias);
     }
 
@@ -63,24 +64,68 @@ class Traductor {
             case 'FOR':
                 this.traducirFor(sentencia);
                 break;
+            case 'INCREMENTO':
+                this.traducirIncremento(sentencia);
+                break;
+            case 'COMENTARIO_LINEA':
+                this.traducirComentarioLinea(sentencia);
+                break;
+            case 'COMENTARIO_BLOQUE':
+                this.traducirComentarioBloque(sentencia);
+                break;
+            case 'TOKEN_DESCONOCIDO':
+                this.traducirTokenDesconocido(sentencia);
+                break;
             case 'SENTENCIA_VACIA':
                 //Ignorar punto y coma vacio
                 break;
             default:
-                this.agregarLinea(`#Sentencia no traducida: ${sentencia.tipo}`);
+                //Intentar continuar
+                if (sentencia.lexema) {
+                    this.agregarLinea(`# Elemento '${sentencia.lexema}' no traducido`);
+                }
+                break;
+        }
+    }
+
+    traducirTokenDesconocido(sentencia) {
+        if (sentencia.lexema === '@' || sentencia.lexema === '$' || sentencia.lexema === '#') {
+            //Ignorar caracteres especiales no soportados
+            return;
+        }
+    
+        //Para otros casos, mostrar advertencia
+        this.agregarLinea(`# Carácter '${sentencia.lexema}' no reconocido - ignorado`);
+    }
+
+    traducirComentarioLinea(comentario) {
+        //Remover "//" y convertir a "#"
+        const contenido = comentario.lexema.substring(2).trim();
+        this.agregarLinea(`# ${contenido}`);
+    }
+
+    traducirComentarioBloque(comentario) {
+        //Remover "/*" y "*/" y convertir a triple comilla
+        const contenido = comentario.lexema.substring(2, comentario.lexema.length - 2).trim();
+        this.agregarLinea(`'''${contenido}'''`);
+    }
+
+    //Agrega esta función
+    traducirIncremento(incremento) {
+        if (incremento.operador === '++') {
+            this.agregarLinea(`${incremento.variable} += 1`);
+        } else if (incremento.operador === '--') {
+            this.agregarLinea(`${incremento.variable} -= 1`);
         }
     }
 
     //TRADUCIR DECLARACIONES DE VARIABLES: int x = 5;
     traducirDeclaracion(declaracion) {
-        //Mapeo correcto de tipos Java a Python
-        const mapeoTipos = {
-            'int': 'int',
-            'double': 'float', // double -> float en Python
-            'char': 'str',
-            'String': 'str', 
-            'boolean': 'bool'
-        };
+        //Si es una declaracion fallida, intentar recuperar lo que se pueda
+        if (declaracion.tipo === 'DECLARACION_FALLIDA') {
+            this.agregarLinea('# Declaracion con errores - usando valores por defecto');
+            return;
+        }
     
         for (const variable of declaracion.variables) {
             const nombreVar = variable.nombre;
@@ -88,14 +133,30 @@ class Traductor {
         
             let valorPython = this.obtenerValorPorDefecto(declaracion.tipoDato);
             if (variable.valorInicial) {
-                valorPython = this.traducirExpresion(variable.valorInicial);
+                try {
+                    valorPython = this.traducirExpresion(variable.valorInicial);
+                } catch (error) {
+                    console.error('Error traduciendo valor inicial:', error);
+                    valorPython = this.obtenerValorPorDefecto(declaracion.tipoDato);
+                }
             }
         
-            const tipoPython = mapeoTipos[declaracion.tipoDato] || declaracion.tipoDato;
+            const tipoPython = this.obtenerTipoPython(declaracion.tipoDato);
             const comentario = `# Declaracion: ${declaracion.tipoDato} -> ${tipoPython}`;
             this.agregarLinea(`${nombreVar} = ${valorPython} ${comentario}`);
         }
     }
+
+obtenerTipoPython(tipoJava) {
+    const mapeo = {
+        'int': 'int',
+        'double': 'float',
+        'String': 'str',
+        'boolean': 'bool',
+        'char': 'str'
+    };
+    return mapeo[tipoJava] || tipoJava;
+}
 
     //TRADUCIR ASIGNACIONES: x = 10;
     traducirAsignacion(asignacion) {
@@ -105,13 +166,16 @@ class Traductor {
 
     //TRADUCIR if-else CON IDENTACION
     traducirIf(sentenciaIf) {
+        //AGREGAR COMENTARIO
+        this.agregarLinea('# Condicional');
+    
         const condicion = this.traducirExpresion(sentenciaIf.condicion);
         this.agregarLinea(`if ${condicion}:`);
-        
+    
         this.aumentarIndentacion();
         this.traducirSentencias(sentenciaIf.sentenciasIf);
         this.disminuirIndentacion();
-        
+    
         if (sentenciaIf.sentenciasElse) {
             this.agregarLinea('else:');
             this.aumentarIndentacion();
@@ -122,9 +186,12 @@ class Traductor {
 
     //TRADUCIR WHILE LOOPS
     traducirWhile(sentenciaWhile) {
+        // AGREGAR COMENTARIO
+        this.agregarLinea('# Ciclo while');
+    
         const condicion = this.traducirExpresion(sentenciaWhile.condicion);
         this.agregarLinea(`while ${condicion}:`);
-        
+    
         this.aumentarIndentacion();
         this.traducirSentencias(sentenciaWhile.sentencias);
         this.disminuirIndentacion();
@@ -133,8 +200,8 @@ class Traductor {
     //TRADUCIR System.out.println -> print()
     traducirPrint(sentenciaPrint) {
         const expresion = this.traducirExpresion(sentenciaPrint.expresion);
-        
-        //Conversion automatica a string si es necesario
+    
+        //Para prints, siempre convertir a string si es necesario
         if (this.necesitaConversionString(sentenciaPrint.expresion)) {
             this.agregarLinea(`print(str(${expresion}))`);
         } else {
@@ -144,27 +211,29 @@ class Traductor {
 
     //CONVERTIR for loops -> while loops
     traducirFor(sentenciaFor) {
-        //Inicializacion: int i = 0
+        //AGREGAR COMENTARIO
+        this.agregarLinea('# Ciclo for traducido a while');
+    
         const initVar = sentenciaFor.inicializacion.variable;
         const initVal = this.traducirExpresion(sentenciaFor.inicializacion.expresion);
         const condicion = this.traducirExpresion(sentenciaFor.condicion);
-        
+    
         this.agregarLinea(`${initVar} = ${initVal}`);
         this.agregarLinea(`while ${condicion}:`);
-        
+    
         this.aumentarIndentacion();
         this.traducirSentencias(sentenciaFor.sentencias);
-        
-        //Actualizacion: i++ o i--
+    
+        //Actualizacion
         const op = sentenciaFor.actualizacion.operador;
         const varUpdate = sentenciaFor.actualizacion.variable;
-        
+    
         if (op === '++') {
             this.agregarLinea(`${varUpdate} += 1`);
         } else if (op === '--') {
             this.agregarLinea(`${varUpdate} -= 1`);
         }
-        
+    
         this.disminuirIndentacion();
     }
 
@@ -178,7 +247,7 @@ class Traductor {
             case 'EXPRESION_BINARIA':
                 return this.traducirExpresionBinaria(expresion);
             default:
-                return `#Expresion no traducida: ${expresion.tipo}`;
+                return `# Expresion no traducida: ${expresion.tipo}`;
         }
     }
 
@@ -191,10 +260,10 @@ class Traductor {
                 return literal.valor;
             case 'CARACTER':
                 //Manejar caracteres escapados
-                const charContent = literal.valor.slice(1, -1); //Quitar comillas simples
+                const charContent = literal.valor.slice(1, -1); // Quitar comillas simples
                 return `'${this.escapeCaracter(charContent)}'`;
             case 'CADENA':
-                const stringContent = literal.valor.slice(1, -1); //Quitar comillas dobles
+                const stringContent = literal.valor.slice(1, -1); // Quitar comillas dobles
                 return `"${this.escapeCadena(stringContent)}"`;
             case 'BOOLEANO':
                 return literal.valor === 'true' ? 'True' : 'False';
@@ -218,26 +287,35 @@ class Traductor {
         const izquierdo = this.traducirExpresion(expresion.izquierdo);
         const derecho = this.traducirExpresion(expresion.derecho);
     
-        //Para suma verificar si es concatenacion con strings
+        //Para suma, verificar si es concatenacion con strings
         if (expresion.operador === '+') {
             const izquierdoEsString = this.esString(expresion.izquierdo);
             const derechoEsString = this.esString(expresion.derecho);
         
             if (izquierdoEsString || derechoEsString) {
-                //Si alguno es string convertir ambos a string
+                //Si alguno es string, convertir ambos a string
                 const izquierdoStr = izquierdoEsString ? izquierdo : `str(${izquierdo})`;
                 const derechoStr = derechoEsString ? derecho : `str(${derecho})`;
                 return `${izquierdoStr} + ${derechoStr}`;
+            } else {
+                //Ambos son numeros - operacion matematica normal
+                return `${izquierdo} ${expresion.operador} ${derecho}`;
             }
         }
     
-        return `(${izquierdo} ${expresion.operador} ${derecho})`;
+        return `${izquierdo} ${expresion.operador} ${derecho}`;
     }
 
     //FUNCION PARA VERIFICAR SI ES string
     esString(expresion) {
-        return (expresion.tipo === 'LITERAL' && expresion.subtipo === 'CADENA') ||
-            (expresion.tipo === 'VARIABLE' && this.variablesDeclaradas.has(expresion.nombre));
+        if (expresion.tipo === 'LITERAL' && expresion.subtipo === 'CADENA') {
+            return true;
+        }
+        if (expresion.tipo === 'VARIABLE') {
+            //Registro de los tipos de variables declaradas
+            return false; //Para operaciones numericas, no convertir a string
+        }
+        return false;
     }
 
     //OBTENER VALORES POR DEFECTO PARA CADA TIPO

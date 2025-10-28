@@ -1,12 +1,13 @@
 class Lexer {
     constructor() {
         this.palabrasReservadas = [
-            'public', 'class', 'static', 'void', 'main', 'String', 'args',
+            'public', 'class', 'static', 'void', 'main', 'String',
             'int', 'double', 'char', 'boolean', 'true', 'false', 'if', 'else',
             'for', 'while', 'System', 'out', 'println'
         ];
         
-        this.simbolos = ['{', '}', '(', ')', '[', ']', ';', ',', '=', '+', '-', '*', '/', 
+        //AGREGAR EL PUNTO '.' A LOS SÍMBOLOS
+        this.simbolos = ['{', '}', '(', ')', '[', ']', ';', ',', '.', '=', '+', '-', '*', '/', 
                         '==', '!=', '>', '<', '>=', '<=', '++', '--'];
         
         this.tokens = [];
@@ -18,6 +19,9 @@ class Lexer {
     }
 
     tokenizar(codigo) {
+        console.log('=== INICIANDO LEXER ===');
+        console.log('Código recibido:', codigo.substring(0, 100) + '...');
+
         this.tokens = [];
         this.errores = [];
         this.lineaActual = 1;
@@ -57,6 +61,11 @@ class Lexer {
                 this.procesarSimbolo();
             }
         }
+
+        console.log('=== TOKENS GENERADOS ===');
+        console.log(this.tokens);
+        console.log('=== ERRORES LÉXICOS ===');
+        console.log(this.errores);
 
         return this.tokens;
     }
@@ -211,7 +220,7 @@ class Lexer {
                 return;
             }
 
-            // Verificar si hay otro punto / numero mal formado
+            //Verificar si hay otro punto / numero mal formado
             if (this.posicion < this.codigo.length && this.codigo[this.posicion] === '.') {
                 this.agregarError('Numero decimal invalido: multiples puntos decimales', inicioLinea, inicioColumna);
                 return;
@@ -255,7 +264,7 @@ class Lexer {
         }
 
         lexema += "'";
-        this.posicion++; //Saltar la comilla final
+        this.posicion++; // Saltar la comilla final
         this.columnaActual++;
 
         this.agregarToken(lexema, 'CARACTER', inicioLinea, inicioColumna);
@@ -265,7 +274,7 @@ class Lexer {
         const inicioLinea = this.lineaActual;
         const inicioColumna = this.columnaActual;
         let lexema = '"';
-        this.posicion++; //Saltar la comilla inicial
+        this.posicion++; // Saltar la comilla inicial
         this.columnaActual++;
 
         //AFD para cadenas: "texto" que puede tener cualquier caracter excepto "
@@ -278,10 +287,10 @@ class Lexer {
 
             //Manejar caracteres escapados
             if (this.codigo[this.posicion] === '\\' && this.posicion + 1 < this.codigo.length) {
-                lexema += this.codigo[this.posicion]; //la barra invertida
+                lexema += this.codigo[this.posicion]; // la barra invertida
                 this.posicion++;
                 this.columnaActual++;
-                lexema += this.codigo[this.posicion]; //el caracter escapado
+                lexema += this.codigo[this.posicion]; // el caracter escapado
                 this.posicion++;
                 this.columnaActual++;
             } else {
@@ -297,7 +306,7 @@ class Lexer {
         }
 
         lexema += '"';
-        this.posicion++; //Saltar la comilla final
+        this.posicion++; // Saltar la comilla final
         this.columnaActual++;
 
         this.agregarToken(lexema, 'CADENA', inicioLinea, inicioColumna);
@@ -314,7 +323,7 @@ class Lexer {
         //AFD para simbolos y operadores
         if (this.posicion + 1 < this.codigo.length) {
             const dosCaracteres = caracterActual + this.codigo[this.posicion + 1];
-            
+        
             //Operadores de 2 caracteres
             if (dosCaracteres === '==' || dosCaracteres === '!=' || 
                 dosCaracteres === '>=' || dosCaracteres === '<=' ||
@@ -335,10 +344,13 @@ class Lexer {
             return;
         }
 
-        //Caracter no reconocido
-        this.agregarError(`Caracter no reconocido: '${caracterActual}'`, inicioLinea, inicioColumna);
+        //Siempre generar un token, incluso para caracteres no reconocidos
         this.posicion++;
         this.columnaActual++;
+    
+        //Para caracteres no reconocidos, generar token de tipo DESCONOCIDO
+        this.agregarToken(lexema, 'DESCONOCIDO', inicioLinea, inicioColumna);
+        this.agregarError(`Carácter no reconocido: '${caracterActual}'`, inicioLinea, inicioColumna);
     }
 
     agregarToken(lexema, tipo, linea, columna) {
